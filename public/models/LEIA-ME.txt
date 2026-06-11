@@ -1,0 +1,45 @@
+FLUXO DE MODELOS: SketchUp -> FBX -> GLB
+=========================================
+
+1) Exporte cada peça do SketchUp como FBX (.fbx) para a pasta:
+       public\models\entrada\
+   Junto com a subpasta de texturas que o SketchUp gera (se houver).
+
+2) Rode a conversão (na raiz do projeto):
+       npm run modelos
+
+   O script converte cada .fbx em .glb e imprime as DIMENSÕES de cada
+   peça em metros — confira se batem com o tamanho real do equipamento.
+   Escala e ponto de ancoragem de cada peça são configurados em
+   tools\pecas.json (padrão: milímetros -> metros, origem no centro da
+   base; peças com braço, como a cancela, ancoram na malha mais alta).
+
+3) Recarregue o aplicativo (F5). O modelo real substitui o placeholder.
+
+NOMES DOS ARQUIVOS (o .glb final precisa ter exatamente estes nomes):
+
+  balanca             - plataforma de pesagem completa
+  cancela             - cancela automática com braço
+  semaforo            - conjunto de semáforo (só a cabeça, sem poste)
+  camera-ip           - câmera IP POE
+  camera-ip-baixo     - câmera voltada para baixo (veículo maior que a balança)
+  camera-ocr          - câmera OCR de leitura de placas
+  leitor-rfid         - leitor antena RFID
+  sensor-emissor      - sensor de barreira (emissor)
+  sensor-receptor     - sensor de barreira (receptor)
+  poste-3m            - poste de 3 m
+  poste-6m            - poste de 6 m
+  poste-1-5m          - poste de 1,5 m
+  display-mensagens   - display de mensagens
+  painel-automacao    - painel SIAMAC
+  cabine              - cabine de pesagem
+  caixa-de-som        - caixa de som
+  veiculo             - caminhão ilustrativo
+  laco-indutivo       - (sem modelo; usa placeholder plano amarelo)
+
+CONVENÇÕES DE MODELAGEM:
+  - Os equipamentos montados em poste (semáforo, câmeras, RFID, sensores,
+    caixa de som, display) são exportados SEM o poste — o aplicativo monta
+    cada um no poste certo, na altura certa (src/layout/constants.ts)
+  - A origem é normalizada automaticamente na conversão (centro da base)
+  - A escala padrão assume exportação em milímetros (tools\pecas.json)
