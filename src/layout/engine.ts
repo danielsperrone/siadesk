@@ -261,6 +261,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
             rotulo: `Sensor receptor de ${nome}`,
             posicao: l.posicao,
             rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
           }
         })(),
       )
@@ -276,6 +277,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
               rotulo: 'Câmera de reconhecimento de veículo',
               posicao: l.posicao,
               rotacaoY: l.rotacaoY,
+              ancora: l.ancora,
             }
           })()
         )
