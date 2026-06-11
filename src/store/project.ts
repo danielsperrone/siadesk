@@ -42,7 +42,7 @@ export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
   'sensor-emissor': { altura: 0.75, rotacaoY: 90, fixadorX: 0.00, fixadorY: 0.07, fixadorZ: 0.05 },
   'sensor-receptor': { altura: 0.75, rotacaoY: -90, fixadorX: 0.03, fixadorY: 0.05, fixadorZ: -0.09 },
   'caixa-de-som': { altura: 2.0, rotacaoY: 90, fixadorX: 0.06, fixadorY: 0.15, fixadorZ: 0.07 },
-  'display-mensagens': { altura: 2.2, rotacaoY: -90, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
+  'display-mensagens': { altura: 2.2, rotacaoY: -90, fixadorX: 0.13, fixadorY: 0.09, fixadorZ: 0.07 },
   'camera-ip': { altura: 2.8, rotacaoY: 180, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
   'camera-ocr': { altura: 2.5, rotacaoY: 180, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
 }
