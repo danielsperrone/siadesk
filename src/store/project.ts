@@ -38,7 +38,7 @@ export const CONFIG_PADRAO: ProjectConfig = {
 
 export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
   'leitor-rfid': { altura: 2.5, rotacaoY: 0, fixadorX: -0.05, fixadorY: 0.30, fixadorZ: 0.08 },
-  'semaforo': { altura: 2.2, rotacaoY: 0, fixadorX: -0.15, fixadorY: 0, fixadorZ: 0 },
+  'semaforo': { altura: 2.2, rotacaoY: 0, fixadorX: 0.07, fixadorY: 0.11, fixadorZ: 0.00 },
   'sensor-emissor': { altura: 0.75, rotacaoY: 90, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
   'sensor-receptor': { altura: 0.75, rotacaoY: -90, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
   'caixa-de-som': { altura: 2.0, rotacaoY: 90, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
