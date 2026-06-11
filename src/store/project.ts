@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { ProjectConfig, CalibrationData, PieceTypeId } from '../types'
 
 interface ProjectState {
@@ -36,7 +37,7 @@ export const CONFIG_PADRAO: ProjectConfig = {
 }
 
 export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
-  'leitor-rfid': { altura: 2.2, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
+  'leitor-rfid': { altura: 2.5, rotacaoY: 0, fixadorX: -0.05, fixadorY: 0.30, fixadorZ: 0.08 },
   'semaforo': { altura: 2.2, rotacaoY: 0, fixadorX: -0.15, fixadorY: 0, fixadorZ: 0 },
   'sensor-emissor': { altura: 0.75, rotacaoY: 90, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
   'sensor-receptor': { altura: 0.75, rotacaoY: -90, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
@@ -46,24 +47,41 @@ export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
   'camera-ocr': { altura: 2.5, rotacaoY: 180, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
 }
 
-export const useProject = create<ProjectState>((set) => ({
-  config: CONFIG_PADRAO,
-  setConfig: (key, value) =>
-    set((state) => ({ config: { ...state.config, [key]: value } })),
-  abaAtiva: 'dimensionamento',
-  setAbaAtiva: (aba) => set({ abaAtiva: aba }),
-  equipamentoCalibrando: 'leitor-rfid',
-  setEquipamentoCalibrando: (tipo) => set({ equipamentoCalibrando: tipo }),
-  calibracoes: CALIBRACOES_PADRAO,
-  updateCalibracao: (tipo, key, value) =>
-    set((state) => ({
-      calibracoes: {
-        ...state.calibracoes,
-        [tipo]: {
-          ...state.calibracoes[tipo],
-          [key]: value,
+export const useProject = create<ProjectState>()(
+  persist(
+    (set) => ({
+      config: CONFIG_PADRAO,
+      setConfig: (key, value) =>
+        set((state) => ({ config: { ...state.config, [key]: value } })),
+      abaAtiva: 'dimensionamento',
+      setAbaAtiva: (aba) => set({ abaAtiva: aba }),
+      equipamentoCalibrando: 'leitor-rfid',
+      setEquipamentoCalibrando: (tipo) => set({ equipamentoCalibrando: tipo }),
+      calibracoes: CALIBRACOES_PADRAO,
+      updateCalibracao: (tipo, key, value) =>
+        set((state) => ({
+          calibracoes: {
+            ...state.calibracoes,
+            [tipo]: {
+              ...state.calibracoes[tipo],
+              [key]: value,
+            },
+          },
+        })),
+    }),
+    {
+      name: 'siadesk-calibracoes',
+      // Persiste apenas as calibrações; equipamentos novos que ainda não
+      // existem no armazenamento recebem o valor padrão
+      partialize: (state) => ({ calibracoes: state.calibracoes }),
+      merge: (persisted, atual) => ({
+        ...atual,
+        calibracoes: {
+          ...CALIBRACOES_PADRAO,
+          ...((persisted as Partial<ProjectState> | undefined)?.calibracoes ?? {}),
         },
-      },
-    })),
-}))
+      }),
+    },
+  ),
+)
 
