@@ -30,6 +30,7 @@ const EQUIPAMENTOS_CALIBRACAO: Array<{ id: PieceTypeId; label: string }> = [
   { id: 'display-mensagens', label: 'Display de Mensagens' },
   { id: 'camera-ip', label: 'Câmera IP' },
   { id: 'camera-ocr', label: 'Câmera OCR' },
+  { id: 'camera-ip-baixo', label: 'Câmera IP Baixo' },
 ]
 
 export function ConfigPanel() {
@@ -160,8 +161,11 @@ export function ConfigPanel() {
             <section className="controles-calibracao">
               <h3>Ajustes de {CATALOGO[equipamentoCalibrando]?.nome}</h3>
               
-              <h4>Assistente de Fixador (Bolinha Rosa)</h4>
-              <p className="ajuda-calibracao">Posicione a bolinha rosa no centro geometrico do fixador/abracadeira do modelo:</p>
+              <h4>1. Marcar o fixador (peça da esquerda)</h4>
+              <p className="ajuda-calibracao">
+                A peça da esquerda fica parada. Mova a bolinha rosa até o centro do
+                fixador/abraçadeira — o ponto por onde passa o eixo do poste:
+              </p>
               
               <div className="controle-grupo">
                 <label>
@@ -205,8 +209,11 @@ export function ConfigPanel() {
                 </label>
               </div>
 
-              <h4>Posicao no Poste (Bolinha Rosa)</h4>
-              <p className="ajuda-calibracao">Movimente e gire o conjunto no poste a partir da bolinha rosa:</p>
+              <h4>2. Posição no poste (preview da direita)</h4>
+              <p className="ajuda-calibracao">
+                No preview da direita a peça é montada com a bolinha presa ao eixo do
+                poste: altura e giro acontecem em torno dela, sem sair da posição:
+              </p>
 
               <div className="controle-grupo">
                 <label>

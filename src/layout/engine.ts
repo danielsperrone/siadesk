@@ -34,28 +34,19 @@ const LADOS: Lado[] = [
   { sinal: 1, nome: 'saída', sufixo: 'saida' },
 ]
 
+// Monta um equipamento no poste: a âncora (centro do fixador, calibrada na
+// aba "Calibrar Postes") é colocada no eixo do poste na altura definida, e o
+// giro acontece em torno dela — o equipamento nunca "sai" do poste.
 function calcularPosicaoEquipamento(
   xPoste: number,
   zPoste: number,
   rotBase: number,
   cal: CalibrationData
-): { posicao: [number, number, number]; rotacaoY: number } {
-  const rotTotal = rotBase + (cal.rotacaoY * Math.PI / 180)
-  const cos = Math.cos(rotTotal)
-  const sin = Math.sin(rotTotal)
-  
-  // O vetor da bolinha rosa (poste) ate o periferico eh a negacao do vetor local
-  const dx = -cal.fixadorX
-  const dy = -cal.fixadorY
-  const dz = -cal.fixadorZ
-  
+): { posicao: [number, number, number]; rotacaoY: number; ancora: [number, number, number] } {
   return {
-    posicao: [
-      xPoste + (dx * cos - dz * sin),
-      cal.altura + dy,
-      zPoste + (dx * sin + dz * cos),
-    ],
-    rotacaoY: rotTotal,
+    posicao: [xPoste, cal.altura, zPoste],
+    rotacaoY: rotBase + (cal.rotacaoY * Math.PI) / 180,
+    ancora: [cal.fixadorX, cal.fixadorY, cal.fixadorZ],
   }
 }
 
@@ -145,6 +136,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
             rotulo: `Leitor RFID de ${nome}`,
             posicao: l.posicao,
             rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
           }
         })(),
       )
@@ -168,6 +160,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
             rotulo: `Câmera IP POE de ${nome}`,
             posicao: l.posicao,
             rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
           }
         })(),
         (() => {
@@ -178,6 +171,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
             rotulo: `Semáforo de ${nome} (aproximação)`,
             posicao: l.posicao,
             rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
           }
         })(),
         (() => {
@@ -192,6 +186,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
               l.posicao[2]
             ] as [number, number, number],
             rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
           }
         })(),
       )
@@ -216,6 +211,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
             rotulo: `Câmera OCR de ${nome}`,
             posicao: l.posicao,
             rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
           }
         })(),
       )
@@ -243,6 +239,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
             rotulo: `Sensor emissor de ${nome}`,
             posicao: l.posicao,
             rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
           }
         })(),
         {
@@ -266,13 +263,18 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
 
       // Câmera de reconhecimento de veículo maior que a balança (SIAP04 entrada)
       if (cfg.cameraVeiculoGrande && sinal === -1) {
-        pecas.push({
-          id: 'camera-veiculo-grande',
-          tipo: 'camera-ip-baixo',
-          rotulo: 'Câmera de reconhecimento de veículo',
-          posicao: [xEmissor, 1.5, ladoMotorista],
-          rotacaoY: rotFrenteFluxo,
-        })
+        pecas.push(
+          (() => {
+            const l = calcularPosicaoEquipamento(xEmissor, ladoMotorista, rotFrenteFluxo, calibracoes['camera-ip-baixo'])
+            return {
+              id: 'camera-veiculo-grande',
+              tipo: 'camera-ip-baixo',
+              rotulo: 'Câmera de reconhecimento de veículo',
+              posicao: l.posicao,
+              rotacaoY: l.rotacaoY,
+            }
+          })()
+        )
       }
     }
   }
@@ -296,6 +298,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
           rotulo: 'Caixa de som',
           posicao: l.posicao,
           rotacaoY: l.rotacaoY,
+          ancora: l.ancora,
         }
       })(),
     )
@@ -319,6 +322,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
           rotulo: 'Display de mensagens',
           posicao: l.posicao,
           rotacaoY: l.rotacaoY,
+          ancora: l.ancora,
         }
       })(),
     )

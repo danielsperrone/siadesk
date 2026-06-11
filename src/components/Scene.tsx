@@ -41,10 +41,10 @@ function AtualizadorCamera({ abaAtiva }: { abaAtiva: string }) {
   const { camera, controls } = useThree()
   useEffect(() => {
     if (abaAtiva === 'calibracao') {
-      camera.position.set(6, 4, 6)
+      camera.position.set(0.8, 2.2, 4.5)
       if (controls) {
         // @ts-ignore
-        controls.target.set(0, 1.5, 0)
+        controls.target.set(0, 1.2, 0)
         // @ts-ignore
         controls.update()
       }
@@ -69,39 +69,52 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
   const calibracoes = useProject((s) => s.calibracoes)
   const modelosDisponiveis = useModelosDisponiveis()
 
+  const calib = calibracoes[equipamentoCalibrando] ?? {
+    altura: 0,
+    rotacaoY: 0,
+    fixadorX: 0,
+    fixadorY: 0,
+    fixadorZ: 0,
+  }
+
   const pecas = useMemo(() => {
     if (abaAtiva === 'calibracao') {
-      const calib = calibracoes[equipamentoCalibrando] || { altura: 0, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: 0 }
-      const tipoPoste = equipamentoCalibrando === 'sensor-emissor' ? 'poste-1-5m' : 'poste-3m'
-      
-      const rotRad = calib.rotacaoY * Math.PI / 180
-      const dx = -calib.fixadorX
-      const dy = -calib.fixadorY
-      const dz = -calib.fixadorZ
-      
+      const tipoPoste =
+        (equipamentoCalibrando === 'sensor-emissor' || equipamentoCalibrando === 'camera-ip-baixo')
+          ? ('poste-1-5m' as const)
+          : ('poste-3m' as const)
+
       return [
+        // --- Painel esquerdo: peça de referência PARADA; a bolinha rosa é
+        // posicionada sobre ela para marcar o centro do fixador
+        {
+          id: 'periferico-referencia',
+          tipo: equipamentoCalibrando,
+          rotulo: `${CATALOGO[equipamentoCalibrando]?.nome ?? ''} (marque o fixador)`,
+          posicao: [-1.2, 1.0, 0] as [number, number, number],
+          rotacaoY: 0,
+        },
+        // --- Painel direito: preview montado no poste; altura e giro
+        // acontecem em torno da âncora (= bolinha), nunca saindo do poste
         {
           id: 'poste-calibracao',
           tipo: tipoPoste,
           rotulo: tipoPoste === 'poste-1-5m' ? 'Poste de 1,5 m' : 'Poste de 3,0 m',
-          posicao: [0, 0, 0] as [number, number, number],
+          posicao: [1.2, 0, 0] as [number, number, number],
           rotacaoY: 0,
         },
         {
-          id: 'periferico-calibracao',
+          id: 'periferico-montado',
           tipo: equipamentoCalibrando,
-          rotulo: CATALOGO[equipamentoCalibrando]?.nome || '',
-          posicao: [
-            dx * Math.cos(rotRad) - dz * Math.sin(rotRad),
-            calib.altura + dy,
-            dx * Math.sin(rotRad) + dz * Math.cos(rotRad),
-          ] as [number, number, number],
-          rotacaoY: rotRad,
-        }
+          rotulo: 'Montado (preview)',
+          posicao: [1.2, calib.altura, 0] as [number, number, number],
+          rotacaoY: (calib.rotacaoY * Math.PI) / 180,
+          ancora: [calib.fixadorX, calib.fixadorY, calib.fixadorZ] as [number, number, number],
+        },
       ]
     }
     return gerarLayout(config, calibracoes)
-  }, [config, abaAtiva, equipamentoCalibrando, calibracoes])
+  }, [config, abaAtiva, equipamentoCalibrando, calibracoes, calib])
 
   return (
     <Canvas
@@ -139,10 +152,23 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
         />
       ))}
       {abaAtiva === 'calibracao' && (
-        <mesh position={[0, calibracoes[equipamentoCalibrando]?.altura || 0, 0]}>
-          <sphereGeometry args={[0.035, 32, 32]} />
-          <meshBasicMaterial color="#ff00ff" depthTest={false} transparent opacity={0.9} />
-        </mesh>
+        <>
+          {/* Bolinha rosa sobre a peça de referência: marca o centro do
+              fixador nas coordenadas locais do modelo */}
+          <mesh
+            position={[-1.2 + calib.fixadorX, 1.0 + calib.fixadorY, calib.fixadorZ]}
+            renderOrder={10}
+          >
+            <sphereGeometry args={[0.035, 32, 32]} />
+            <meshBasicMaterial color="#ff00ff" depthTest={false} transparent opacity={0.9} />
+          </mesh>
+          {/* Bolinha no preview montado: fica sempre no eixo do poste, na
+              altura escolhida — é em torno dela que a peça gira */}
+          <mesh position={[1.2, calib.altura, 0]} renderOrder={10}>
+            <sphereGeometry args={[0.035, 32, 32]} />
+            <meshBasicMaterial color="#ff00ff" depthTest={false} transparent opacity={0.9} />
+          </mesh>
+        </>
       )}
       <OrbitControls makeDefault target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.05} />
     </Canvas>

@@ -45,6 +45,7 @@ export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
   'display-mensagens': { altura: 2.2, rotacaoY: -90, fixadorX: 0.13, fixadorY: 0.09, fixadorZ: 0.07 },
   'camera-ip': { altura: 2.8, rotacaoY: 180, fixadorX: 0.09, fixadorY: 0.05, fixadorZ: 0.03 },
   'camera-ocr': { altura: 2.5, rotacaoY: 180, fixadorX: -0.15, fixadorY: 0.07, fixadorZ: 0.08 },
+  'camera-ip-baixo': { altura: 1.5, rotacaoY: 0, fixadorX: 0.00, fixadorY: 0.00, fixadorZ: 0.00 },
 }
 
 export const useProject = create<ProjectState>()(
