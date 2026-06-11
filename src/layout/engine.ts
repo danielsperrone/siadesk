@@ -1,16 +1,8 @@
-import type { PieceInstance, ProjectConfig } from '../types'
+import type { PieceInstance, ProjectConfig, CalibrationData } from '../types'
 import {
   AFASTAMENTO_CABINE,
   AFASTAMENTO_LATERAL,
   AFASTAMENTO_SENSOR,
-  ALTURA_CAIXA_SOM,
-  ALTURA_CAMERA_IP,
-  ALTURA_CAMERA_OCR,
-  ALTURA_DISPLAY,
-  ALTURA_RFID,
-  ALTURA_SEMAFORO,
-  ALTURA_SENSOR,
-  OFFSET_EQUIPAMENTO_POSTE,
   RECUO_CANCELA,
   RECUO_LACO,
   RECUO_POSTE_CAMERA,
@@ -42,7 +34,7 @@ const LADOS: Lado[] = [
   { sinal: 1, nome: 'saída', sufixo: 'saida' },
 ]
 
-export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
+export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, CalibrationData>): PieceInstance[] {
   const pecas: PieceInstance[] = []
   const metadeComprimento = cfg.comprimentoBalanca / 2
   const metadeLargura = cfg.larguraBalanca / 2
@@ -125,11 +117,11 @@ export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
           tipo: 'leitor-rfid',
           rotulo: `Leitor RFID de ${nome}`,
           posicao: [
-            xPosteRfid,
-            ALTURA_RFID,
-            ladoMotorista + OFFSET_EQUIPAMENTO_POSTE,
+            xPosteRfid + calibracoes['leitor-rfid'].offsetX,
+            calibracoes['leitor-rfid'].altura,
+            ladoMotorista + calibracoes['leitor-rfid'].offsetZ,
           ],
-          rotacaoY: rotFrenteFluxo,
+          rotacaoY: rotFrenteFluxo + (calibracoes['leitor-rfid'].rotacaoY * Math.PI / 180),
         },
       )
     }
@@ -148,35 +140,34 @@ export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
           id: `camera-ip-${sufixo}`,
           tipo: 'camera-ip',
           rotulo: `Câmera IP POE de ${nome}`,
-          // Posicionada em direção a onde a placa fica com o veículo na balança
           posicao: [
-            xPosteCamera,
-            ALTURA_CAMERA_IP,
-            ladoMotorista + OFFSET_EQUIPAMENTO_POSTE,
+            xPosteCamera + calibracoes['camera-ip'].offsetX,
+            calibracoes['camera-ip'].altura,
+            ladoMotorista + calibracoes['camera-ip'].offsetZ,
           ],
-          rotacaoY: rotFrenteFluxo + Math.PI,
+          rotacaoY: rotFrenteFluxo + (calibracoes['camera-ip'].rotacaoY * Math.PI / 180),
         },
         {
           id: `semaforo-frente-${sufixo}`,
           tipo: 'semaforo',
           rotulo: `Semáforo de ${nome} (aproximação)`,
           posicao: [
-            xPosteCamera + sinal * OFFSET_EQUIPAMENTO_POSTE,
-            ALTURA_SEMAFORO,
-            ladoMotorista,
+            xPosteCamera + sinal * calibracoes['semaforo'].offsetX,
+            calibracoes['semaforo'].altura,
+            ladoMotorista + calibracoes['semaforo'].offsetZ,
           ],
-          rotacaoY: rotFrenteFluxo,
+          rotacaoY: rotFrenteFluxo + (calibracoes['semaforo'].rotacaoY * Math.PI / 180),
         },
         {
           id: `semaforo-tras-${sufixo}`,
           tipo: 'semaforo',
           rotulo: `Semáforo de ${nome} (balança)`,
           posicao: [
-            xPosteCamera - sinal * OFFSET_EQUIPAMENTO_POSTE,
-            ALTURA_SEMAFORO - 0.45,
-            ladoMotorista,
+            xPosteCamera - sinal * calibracoes['semaforo'].offsetX,
+            calibracoes['semaforo'].altura - 0.45,
+            ladoMotorista - calibracoes['semaforo'].offsetZ,
           ],
-          rotacaoY: rotFrenteFluxo + Math.PI,
+          rotacaoY: rotFrenteFluxo + Math.PI + (calibracoes['semaforo'].rotacaoY * Math.PI / 180),
         },
       )
     }
@@ -196,8 +187,12 @@ export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
           id: `camera-ocr-${sufixo}`,
           tipo: 'camera-ocr',
           rotulo: `Câmera OCR de ${nome}`,
-          posicao: [xOcr, ALTURA_CAMERA_OCR, ladoCabine - OFFSET_EQUIPAMENTO_POSTE],
-          rotacaoY: rotFrenteFluxo + Math.PI,
+          posicao: [
+            xOcr + calibracoes['camera-ocr'].offsetX,
+            calibracoes['camera-ocr'].altura,
+            ladoCabine + calibracoes['camera-ocr'].offsetZ,
+          ],
+          rotacaoY: rotFrenteFluxo + (calibracoes['camera-ocr'].rotacaoY * Math.PI / 180),
         },
       )
     }
@@ -220,8 +215,12 @@ export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
           id: `sensor-emissor-${sufixo}`,
           tipo: 'sensor-emissor',
           rotulo: `Sensor emissor de ${nome}`,
-          posicao: [xEmissor, ALTURA_SENSOR, ladoMotorista + OFFSET_EQUIPAMENTO_POSTE],
-          rotacaoY: Math.PI / 2,
+          posicao: [
+            xEmissor + calibracoes['sensor-emissor'].offsetX,
+            calibracoes['sensor-emissor'].altura,
+            ladoMotorista + calibracoes['sensor-emissor'].offsetZ,
+          ],
+          rotacaoY: (calibracoes['sensor-emissor'].rotacaoY * Math.PI / 180),
         },
         {
           id: `poste-receptor-${sufixo}`,
@@ -234,8 +233,12 @@ export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
           id: `sensor-receptor-${sufixo}`,
           tipo: 'sensor-receptor',
           rotulo: `Sensor receptor de ${nome}`,
-          posicao: [xReceptor, ALTURA_SENSOR, ladoCabine - OFFSET_EQUIPAMENTO_POSTE],
-          rotacaoY: -Math.PI / 2,
+          posicao: [
+            xReceptor + calibracoes['sensor-receptor'].offsetX,
+            calibracoes['sensor-receptor'].altura,
+            ladoCabine + calibracoes['sensor-receptor'].offsetZ,
+          ],
+          rotacaoY: (calibracoes['sensor-receptor'].rotacaoY * Math.PI / 180),
         },
       )
 
@@ -267,8 +270,12 @@ export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
         id: 'caixa-som',
         tipo: 'caixa-de-som',
         rotulo: 'Caixa de som',
-        posicao: [0, ALTURA_CAIXA_SOM, ladoMotorista + OFFSET_EQUIPAMENTO_POSTE],
-        rotacaoY: Math.PI / 2,
+        posicao: [
+          0 + calibracoes['caixa-de-som'].offsetX,
+          calibracoes['caixa-de-som'].altura,
+          ladoMotorista + calibracoes['caixa-de-som'].offsetZ,
+        ],
+        rotacaoY: (calibracoes['caixa-de-som'].rotacaoY * Math.PI / 180),
       },
     )
   }
@@ -287,8 +294,12 @@ export function gerarLayout(cfg: ProjectConfig): PieceInstance[] {
         id: 'display-mensagens',
         tipo: 'display-mensagens',
         rotulo: 'Display de mensagens',
-        posicao: [xDisplay, ALTURA_DISPLAY, ladoCabine - OFFSET_EQUIPAMENTO_POSTE],
-        rotacaoY: -Math.PI / 2,
+        posicao: [
+          xDisplay + calibracoes['display-mensagens'].offsetX,
+          calibracoes['display-mensagens'].altura,
+          ladoCabine + calibracoes['display-mensagens'].offsetZ,
+        ],
+        rotacaoY: (calibracoes['display-mensagens'].rotacaoY * Math.PI / 180),
       },
     )
   }

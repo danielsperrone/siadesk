@@ -1,5 +1,6 @@
-import { useProject } from '../store/project'
-import type { ProjectConfig } from '../types'
+import { useProject, CALIBRACOES_PADRAO } from '../store/project'
+import { CATALOGO } from '../catalog/pieces'
+import type { ProjectConfig, CalibrationData, PieceTypeId } from '../types'
 
 const ITENS_AUTOMACAO: Array<{ key: keyof ProjectConfig; label: string }> = [
   { key: 'cancelaEntrada', label: 'Cancela de entrada' },
@@ -20,76 +21,220 @@ const ITENS_AUTOMACAO: Array<{ key: keyof ProjectConfig; label: string }> = [
   { key: 'mostrarVeiculo', label: 'Caminhão ilustrativo' },
 ]
 
+const EQUIPAMENTOS_CALIBRACAO: Array<{ id: PieceTypeId; label: string }> = [
+  { id: 'leitor-rfid', label: 'Leitor RFID' },
+  { id: 'semaforo', label: 'Semáforo' },
+  { id: 'sensor-emissor', label: 'Sensor Emissor' },
+  { id: 'sensor-receptor', label: 'Sensor Receptor' },
+  { id: 'caixa-de-som', label: 'Caixa de Som' },
+  { id: 'display-mensagens', label: 'Display de Mensagens' },
+  { id: 'camera-ip', label: 'Câmera IP' },
+  { id: 'camera-ocr', label: 'Câmera OCR' },
+]
+
 export function ConfigPanel() {
   const config = useProject((s) => s.config)
   const setConfig = useProject((s) => s.setConfig)
+  
+  const abaAtiva = useProject((s) => s.abaAtiva)
+  const setAbaAtiva = useProject((s) => s.setAbaAtiva)
+  
+  const equipamentoCalibrando = useProject((s) => s.equipamentoCalibrando)
+  const setEquipamentoCalibrando = useProject((s) => s.setEquipamentoCalibrando)
+  
+  const calibracoes = useProject((s) => s.calibracoes)
+  const updateCalibracao = useProject((s) => s.updateCalibracao)
+
+  const calib = calibracoes[equipamentoCalibrando] || { altura: 0, rotacaoY: 0, offsetX: 0, offsetZ: 0 }
+
+  const handleUpdate = (key: keyof CalibrationData, value: number) => {
+    updateCalibracao(equipamentoCalibrando, key, value)
+  }
 
   return (
     <aside className="painel-config">
       <h1>Dimensionador</h1>
       <p className="subtitulo">Automação de balança rodoviária</p>
 
-      <section>
-        <h2>Projeto</h2>
-        <label>
-          Cliente
-          <input
-            type="text"
-            value={config.cliente}
-            onChange={(e) => setConfig('cliente', e.target.value)}
-            placeholder="Nome do cliente"
-          />
-        </label>
-        <label>
-          Obra / Local
-          <input
-            type="text"
-            value={config.obra}
-            onChange={(e) => setConfig('obra', e.target.value)}
-            placeholder="Cidade — UF"
-          />
-        </label>
-      </section>
+      <div className="abas">
+        <button
+          className={abaAtiva === 'dimensionamento' ? 'active' : ''}
+          onClick={() => setAbaAtiva('dimensionamento')}
+        >
+          Dimensionamento
+        </button>
+        <button
+          className={abaAtiva === 'calibracao' ? 'active' : ''}
+          onClick={() => setAbaAtiva('calibracao')}
+        >
+          Calibrar Postes
+        </button>
+      </div>
 
-      <section>
-        <h2>Balança</h2>
-        <label>
-          Comprimento da plataforma (m)
-          <input
-            type="number"
-            min={6}
-            max={36}
-            step={0.5}
-            value={config.comprimentoBalanca}
-            onChange={(e) => setConfig('comprimentoBalanca', Number(e.target.value))}
-          />
-        </label>
-        <label>
-          Largura da plataforma (m)
-          <input
-            type="number"
-            min={3}
-            max={4}
-            step={0.1}
-            value={config.larguraBalanca}
-            onChange={(e) => setConfig('larguraBalanca', Number(e.target.value))}
-          />
-        </label>
-      </section>
+      <div className="aba-conteudo">
+        {abaAtiva === 'dimensionamento' ? (
+          <>
+            <section>
+              <h2>Projeto</h2>
+              <label>
+                Cliente
+                <input
+                  type="text"
+                  value={config.cliente}
+                  onChange={(e) => setConfig('cliente', e.target.value)}
+                  placeholder="Nome do cliente"
+                />
+              </label>
+              <label>
+                Obra / Local
+                <input
+                  type="text"
+                  value={config.obra}
+                  onChange={(e) => setConfig('obra', e.target.value)}
+                  placeholder="Cidade — UF"
+                />
+              </label>
+            </section>
 
-      <section>
-        <h2>Itens de automação</h2>
-        {ITENS_AUTOMACAO.map(({ key, label }) => (
-          <label key={key} className="checkbox">
-            <input
-              type="checkbox"
-              checked={config[key] as boolean}
-              onChange={(e) => setConfig(key, e.target.checked as ProjectConfig[typeof key])}
-            />
-            {label}
-          </label>
-        ))}
-      </section>
+            <section>
+              <h2>Balança</h2>
+              <label>
+                Comprimento da plataforma (m)
+                <input
+                  type="number"
+                  min={6}
+                  max={36}
+                  step={0.5}
+                  value={config.comprimentoBalanca}
+                  onChange={(e) => setConfig('comprimentoBalanca', Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Largura da plataforma (m)
+                <input
+                  type="number"
+                  min={3}
+                  max={4}
+                  step={0.1}
+                  value={config.larguraBalanca}
+                  onChange={(e) => setConfig('larguraBalanca', Number(e.target.value))}
+                />
+              </label>
+            </section>
+
+            <section>
+              <h2>Itens de automação</h2>
+              {ITENS_AUTOMACAO.map(({ key, label }) => (
+                <label key={key} className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={config[key] as boolean}
+                    onChange={(e) => setConfig(key, e.target.checked as ProjectConfig[typeof key])}
+                  />
+                  {label}
+                </label>
+              ))}
+            </section>
+          </>
+        ) : (
+          <div className="calibracao-container">
+            <section>
+              <h2>Configuração do Fixador</h2>
+              <p className="instrucao">
+                Selecione o equipamento para ajustar o ponto central do fixador em relação ao poste:
+              </p>
+              
+              <div className="seletor-equipamento">
+                {EQUIPAMENTOS_CALIBRACAO.map((eq) => (
+                  <button
+                    key={eq.id}
+                    className={equipamentoCalibrando === eq.id ? 'active' : ''}
+                    onClick={() => setEquipamentoCalibrando(eq.id)}
+                  >
+                    {eq.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="controles-calibracao">
+              <h3>Ajustes de {CATALOGO[equipamentoCalibrando]?.nome}</h3>
+              
+              <div className="controle-grupo">
+                <label>
+                  <span>Altura no Poste (Y): <strong>{calib.altura.toFixed(2)} m</strong></span>
+                  <input
+                    type="range"
+                    min="0.0"
+                    max="3.5"
+                    step="0.05"
+                    value={calib.altura}
+                    onChange={(e) => handleUpdate('altura', Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="controle-grupo">
+                <label>
+                  <span>Giro (Rotação Y): <strong>{calib.rotacaoY}°</strong></span>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step="5"
+                    value={calib.rotacaoY}
+                    onChange={(e) => handleUpdate('rotacaoY', Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="controle-grupo">
+                <label>
+                  <span>Offset Horizontal (X): <strong>{calib.offsetX.toFixed(2)} m</strong></span>
+                  <input
+                    type="range"
+                    min="-0.8"
+                    max="0.8"
+                    step="0.01"
+                    value={calib.offsetX}
+                    onChange={(e) => handleUpdate('offsetX', Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="controle-grupo">
+                <label>
+                  <span>Offset Profundidade (Z): <strong>{calib.offsetZ.toFixed(2)} m</strong></span>
+                  <input
+                    type="range"
+                    min="-0.8"
+                    max="0.8"
+                    step="0.01"
+                    value={calib.offsetZ}
+                    onChange={(e) => handleUpdate('offsetZ', Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <button
+                className="btn-reset"
+                onClick={() => {
+                  const padrao = CALIBRACOES_PADRAO[equipamentoCalibrando]
+                  if (padrao) {
+                    handleUpdate('altura', padrao.altura)
+                    handleUpdate('rotacaoY', padrao.rotacaoY)
+                    handleUpdate('offsetX', padrao.offsetX)
+                    handleUpdate('offsetZ', padrao.offsetZ)
+                  }
+                }}
+              >
+                Resetar para o Padrão
+              </button>
+            </section>
+          </div>
+        )}
+      </div>
     </aside>
   )
 }
+

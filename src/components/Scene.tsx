@@ -37,10 +37,61 @@ function ExporCenaDev() {
   return null
 }
 
+function AtualizadorCamera({ abaAtiva }: { abaAtiva: string }) {
+  const { camera, controls } = useThree()
+  useEffect(() => {
+    if (abaAtiva === 'calibracao') {
+      camera.position.set(6, 4, 6)
+      if (controls) {
+        // @ts-ignore
+        controls.target.set(0, 1.5, 0)
+        // @ts-ignore
+        controls.update()
+      }
+    } else {
+      camera.position.set(18, 14, 18)
+      if (controls) {
+        // @ts-ignore
+        controls.target.set(0, 0, 0)
+        // @ts-ignore
+        controls.update()
+      }
+    }
+    camera.updateProjectionMatrix()
+  }, [abaAtiva, camera, controls])
+  return null
+}
+
 export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
   const config = useProject((s) => s.config)
+  const abaAtiva = useProject((s) => s.abaAtiva)
+  const equipamentoCalibrando = useProject((s) => s.equipamentoCalibrando)
+  const calibracoes = useProject((s) => s.calibracoes)
   const modelosDisponiveis = useModelosDisponiveis()
-  const pecas = useMemo(() => gerarLayout(config), [config])
+
+  const pecas = useMemo(() => {
+    if (abaAtiva === 'calibracao') {
+      const calib = calibracoes[equipamentoCalibrando] || { altura: 0, rotacaoY: 0, offsetX: 0, offsetZ: 0 }
+      const tipoPoste = equipamentoCalibrando === 'sensor-emissor' ? 'poste-1-5m' : 'poste-3m'
+      return [
+        {
+          id: 'poste-calibracao',
+          tipo: tipoPoste,
+          rotulo: tipoPoste === 'poste-1-5m' ? 'Poste de 1,5 m' : 'Poste de 3,0 m',
+          posicao: [0, 0, 0] as [number, number, number],
+          rotacaoY: 0,
+        },
+        {
+          id: 'periferico-calibracao',
+          tipo: equipamentoCalibrando,
+          rotulo: CATALOGO[equipamentoCalibrando]?.nome || '',
+          posicao: [calib.offsetX, calib.altura, calib.offsetZ] as [number, number, number],
+          rotacaoY: calib.rotacaoY * Math.PI / 180,
+        }
+      ]
+    }
+    return gerarLayout(config, calibracoes)
+  }, [config, abaAtiva, equipamentoCalibrando, calibracoes])
 
   return (
     <Canvas
@@ -49,6 +100,7 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
       gl={{ preserveDrawingBuffer: true }} // necessário para snapshots no PDF
     >
       <ExporCenaDev />
+      <AtualizadorCamera abaAtiva={abaAtiva} />
       <color attach="background" args={['#cfe0ec']} />
       <ambientLight intensity={0.6} />
       <directionalLight
@@ -57,7 +109,7 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
         castShadow
         shadow-mapSize={[2048, 2048]}
       />
-      <Pista comprimentoBalanca={config.comprimentoBalanca} />
+      {abaAtiva !== 'calibracao' && <Pista comprimentoBalanca={config.comprimentoBalanca} />}
       <Grid
         position={[0, 0.01, 0]}
         args={[80, 80]}

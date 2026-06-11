@@ -76,3 +76,11 @@ export interface ProjectConfig {
   /** Caminhão ilustrativo sobre a balança */
   mostrarVeiculo: boolean
 }
+
+export interface CalibrationData {
+  altura: number
+  rotacaoY: number // Rotação em torno de Y, em graus (ex: -180 a 180)
+  offsetX: number  // Deslocamento X, em metros
+  offsetZ: number  // Deslocamento Z, em metros
+}
+
