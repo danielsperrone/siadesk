@@ -34,6 +34,25 @@ const LADOS: Lado[] = [
   { sinal: 1, nome: 'saída', sufixo: 'saida' },
 ]
 
+function calcularPosicaoEquipamento(
+  xPoste: number,
+  zPoste: number,
+  rotBase: number,
+  cal: CalibrationData
+): { posicao: [number, number, number]; rotacaoY: number } {
+  const rotTotal = rotBase + (cal.rotacaoY * Math.PI / 180)
+  const cos = Math.cos(rotTotal)
+  const sin = Math.sin(rotTotal)
+  return {
+    posicao: [
+      xPoste + (cal.offsetX * cos - cal.offsetZ * sin),
+      cal.altura,
+      zPoste + (cal.offsetX * sin + cal.offsetZ * cos),
+    ],
+    rotacaoY: rotTotal,
+  }
+}
+
 export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, CalibrationData>): PieceInstance[] {
   const pecas: PieceInstance[] = []
   const metadeComprimento = cfg.comprimentoBalanca / 2
@@ -112,17 +131,16 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
           posicao: [xPosteRfid, 0, ladoMotorista],
           rotacaoY: 0,
         },
-        {
-          id: `rfid-${sufixo}`,
-          tipo: 'leitor-rfid',
-          rotulo: `Leitor RFID de ${nome}`,
-          posicao: [
-            xPosteRfid + calibracoes['leitor-rfid'].offsetX,
-            calibracoes['leitor-rfid'].altura,
-            ladoMotorista + calibracoes['leitor-rfid'].offsetZ,
-          ],
-          rotacaoY: rotFrenteFluxo + (calibracoes['leitor-rfid'].rotacaoY * Math.PI / 180),
-        },
+        (() => {
+          const l = calcularPosicaoEquipamento(xPosteRfid, ladoMotorista, rotFrenteFluxo, calibracoes['leitor-rfid'])
+          return {
+            id: `rfid-${sufixo}`,
+            tipo: 'leitor-rfid',
+            rotulo: `Leitor RFID de ${nome}`,
+            posicao: l.posicao,
+            rotacaoY: l.rotacaoY,
+          }
+        })(),
       )
     }
 
@@ -136,39 +154,40 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
           posicao: [xPosteCamera, 0, ladoMotorista],
           rotacaoY: 0,
         },
-        {
-          id: `camera-ip-${sufixo}`,
-          tipo: 'camera-ip',
-          rotulo: `Câmera IP POE de ${nome}`,
-          posicao: [
-            xPosteCamera + calibracoes['camera-ip'].offsetX,
-            calibracoes['camera-ip'].altura,
-            ladoMotorista + calibracoes['camera-ip'].offsetZ,
-          ],
-          rotacaoY: rotFrenteFluxo + (calibracoes['camera-ip'].rotacaoY * Math.PI / 180),
-        },
-        {
-          id: `semaforo-frente-${sufixo}`,
-          tipo: 'semaforo',
-          rotulo: `Semáforo de ${nome} (aproximação)`,
-          posicao: [
-            xPosteCamera + sinal * calibracoes['semaforo'].offsetX,
-            calibracoes['semaforo'].altura,
-            ladoMotorista + calibracoes['semaforo'].offsetZ,
-          ],
-          rotacaoY: rotFrenteFluxo + (calibracoes['semaforo'].rotacaoY * Math.PI / 180),
-        },
-        {
-          id: `semaforo-tras-${sufixo}`,
-          tipo: 'semaforo',
-          rotulo: `Semáforo de ${nome} (balança)`,
-          posicao: [
-            xPosteCamera - sinal * calibracoes['semaforo'].offsetX,
-            calibracoes['semaforo'].altura - 0.45,
-            ladoMotorista - calibracoes['semaforo'].offsetZ,
-          ],
-          rotacaoY: rotFrenteFluxo + Math.PI + (calibracoes['semaforo'].rotacaoY * Math.PI / 180),
-        },
+        (() => {
+          const l = calcularPosicaoEquipamento(xPosteCamera, ladoMotorista, rotFrenteFluxo, calibracoes['camera-ip'])
+          return {
+            id: `camera-ip-${sufixo}`,
+            tipo: 'camera-ip',
+            rotulo: `Câmera IP POE de ${nome}`,
+            posicao: l.posicao,
+            rotacaoY: l.rotacaoY,
+          }
+        })(),
+        (() => {
+          const l = calcularPosicaoEquipamento(xPosteCamera, ladoMotorista, rotFrenteFluxo, calibracoes['semaforo'])
+          return {
+            id: `semaforo-frente-${sufixo}`,
+            tipo: 'semaforo',
+            rotulo: `Semáforo de ${nome} (aproximação)`,
+            posicao: l.posicao,
+            rotacaoY: l.rotacaoY,
+          }
+        })(),
+        (() => {
+          const l = calcularPosicaoEquipamento(xPosteCamera, ladoMotorista, rotFrenteFluxo + Math.PI, calibracoes['semaforo'])
+          return {
+            id: `semaforo-tras-${sufixo}`,
+            tipo: 'semaforo',
+            rotulo: `Semáforo de ${nome} (balança)`,
+            posicao: [
+              l.posicao[0],
+              l.posicao[1] - 0.45,
+              l.posicao[2]
+            ] as [number, number, number],
+            rotacaoY: l.rotacaoY,
+          }
+        })(),
       )
     }
 
@@ -183,17 +202,16 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
           posicao: [xOcr, 0, ladoCabine],
           rotacaoY: 0,
         },
-        {
-          id: `camera-ocr-${sufixo}`,
-          tipo: 'camera-ocr',
-          rotulo: `Câmera OCR de ${nome}`,
-          posicao: [
-            xOcr + calibracoes['camera-ocr'].offsetX,
-            calibracoes['camera-ocr'].altura,
-            ladoCabine + calibracoes['camera-ocr'].offsetZ,
-          ],
-          rotacaoY: rotFrenteFluxo + (calibracoes['camera-ocr'].rotacaoY * Math.PI / 180),
-        },
+        (() => {
+          const l = calcularPosicaoEquipamento(xOcr, ladoCabine, rotFrenteFluxo, calibracoes['camera-ocr'])
+          return {
+            id: `camera-ocr-${sufixo}`,
+            tipo: 'camera-ocr',
+            rotulo: `Câmera OCR de ${nome}`,
+            posicao: l.posicao,
+            rotacaoY: l.rotacaoY,
+          }
+        })(),
       )
     }
 
@@ -211,17 +229,16 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
           posicao: [xEmissor, 0, ladoMotorista],
           rotacaoY: 0,
         },
-        {
-          id: `sensor-emissor-${sufixo}`,
-          tipo: 'sensor-emissor',
-          rotulo: `Sensor emissor de ${nome}`,
-          posicao: [
-            xEmissor + calibracoes['sensor-emissor'].offsetX,
-            calibracoes['sensor-emissor'].altura,
-            ladoMotorista + calibracoes['sensor-emissor'].offsetZ,
-          ],
-          rotacaoY: (calibracoes['sensor-emissor'].rotacaoY * Math.PI / 180),
-        },
+        (() => {
+          const l = calcularPosicaoEquipamento(xEmissor, ladoMotorista, 0, calibracoes['sensor-emissor'])
+          return {
+            id: `sensor-emissor-${sufixo}`,
+            tipo: 'sensor-emissor',
+            rotulo: `Sensor emissor de ${nome}`,
+            posicao: l.posicao,
+            rotacaoY: l.rotacaoY,
+          }
+        })(),
         {
           id: `poste-receptor-${sufixo}`,
           tipo: 'poste-3m',
@@ -229,17 +246,16 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
           posicao: [xReceptor, 0, ladoCabine],
           rotacaoY: 0,
         },
-        {
-          id: `sensor-receptor-${sufixo}`,
-          tipo: 'sensor-receptor',
-          rotulo: `Sensor receptor de ${nome}`,
-          posicao: [
-            xReceptor + calibracoes['sensor-receptor'].offsetX,
-            calibracoes['sensor-receptor'].altura,
-            ladoCabine + calibracoes['sensor-receptor'].offsetZ,
-          ],
-          rotacaoY: (calibracoes['sensor-receptor'].rotacaoY * Math.PI / 180),
-        },
+        (() => {
+          const l = calcularPosicaoEquipamento(xReceptor, ladoCabine, 0, calibracoes['sensor-receptor'])
+          return {
+            id: `sensor-receptor-${sufixo}`,
+            tipo: 'sensor-receptor',
+            rotulo: `Sensor receptor de ${nome}`,
+            posicao: l.posicao,
+            rotacaoY: l.rotacaoY,
+          }
+        })(),
       )
 
       // Câmera de reconhecimento de veículo maior que a balança (SIAP04 entrada)
@@ -266,17 +282,16 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
         posicao: [0, 0, ladoMotorista],
         rotacaoY: 0,
       },
-      {
-        id: 'caixa-som',
-        tipo: 'caixa-de-som',
-        rotulo: 'Caixa de som',
-        posicao: [
-          0 + calibracoes['caixa-de-som'].offsetX,
-          calibracoes['caixa-de-som'].altura,
-          ladoMotorista + calibracoes['caixa-de-som'].offsetZ,
-        ],
-        rotacaoY: (calibracoes['caixa-de-som'].rotacaoY * Math.PI / 180),
-      },
+      (() => {
+        const l = calcularPosicaoEquipamento(0, ladoMotorista, 0, calibracoes['caixa-de-som'])
+        return {
+          id: 'caixa-som',
+          tipo: 'caixa-de-som',
+          rotulo: 'Caixa de som',
+          posicao: l.posicao,
+          rotacaoY: l.rotacaoY,
+        }
+      })(),
     )
   }
 
@@ -290,17 +305,16 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
         posicao: [xDisplay, 0, ladoCabine],
         rotacaoY: 0,
       },
-      {
-        id: 'display-mensagens',
-        tipo: 'display-mensagens',
-        rotulo: 'Display de mensagens',
-        posicao: [
-          xDisplay + calibracoes['display-mensagens'].offsetX,
-          calibracoes['display-mensagens'].altura,
-          ladoCabine + calibracoes['display-mensagens'].offsetZ,
-        ],
-        rotacaoY: (calibracoes['display-mensagens'].rotacaoY * Math.PI / 180),
-      },
+      (() => {
+        const l = calcularPosicaoEquipamento(xDisplay, ladoCabine, 0, calibracoes['display-mensagens'])
+        return {
+          id: 'display-mensagens',
+          tipo: 'display-mensagens',
+          rotulo: 'Display de mensagens',
+          posicao: l.posicao,
+          rotacaoY: l.rotacaoY,
+        }
+      })(),
     )
   }
 

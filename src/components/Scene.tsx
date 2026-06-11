@@ -85,7 +85,11 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
           id: 'periferico-calibracao',
           tipo: equipamentoCalibrando,
           rotulo: CATALOGO[equipamentoCalibrando]?.nome || '',
-          posicao: [calib.offsetX, calib.altura, calib.offsetZ] as [number, number, number],
+          posicao: [
+            calib.offsetX * Math.cos(calib.rotacaoY * Math.PI / 180) - calib.offsetZ * Math.sin(calib.rotacaoY * Math.PI / 180),
+            calib.altura,
+            calib.offsetX * Math.sin(calib.rotacaoY * Math.PI / 180) + calib.offsetZ * Math.cos(calib.rotacaoY * Math.PI / 180),
+          ] as [number, number, number],
           rotacaoY: calib.rotacaoY * Math.PI / 180,
         }
       ]
