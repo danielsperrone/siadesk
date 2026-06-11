@@ -160,6 +160,54 @@ export function ConfigPanel() {
             <section className="controles-calibracao">
               <h3>Ajustes de {CATALOGO[equipamentoCalibrando]?.nome}</h3>
               
+              <h4>Assistente de Fixador (Bolinha Rosa)</h4>
+              <p className="ajuda-calibracao">Posicione a bolinha rosa no centro geometrico do fixador/abracadeira do modelo:</p>
+              
+              <div className="controle-grupo">
+                <label>
+                  <span>Fixador Lateral (X): <strong>{calib.fixadorX.toFixed(2)} m</strong></span>
+                  <input
+                    type="range"
+                    min="-0.8"
+                    max="0.8"
+                    step="0.01"
+                    value={calib.fixadorX}
+                    onChange={(e) => handleUpdate('fixadorX', Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="controle-grupo">
+                <label>
+                  <span>Fixador Altura (Y): <strong>{calib.fixadorY.toFixed(2)} m</strong></span>
+                  <input
+                    type="range"
+                    min="-0.8"
+                    max="0.8"
+                    step="0.01"
+                    value={calib.fixadorY}
+                    onChange={(e) => handleUpdate('fixadorY', Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="controle-grupo">
+                <label>
+                  <span>Fixador Profundidade (Z): <strong>{calib.fixadorZ.toFixed(2)} m</strong></span>
+                  <input
+                    type="range"
+                    min="-0.8"
+                    max="0.8"
+                    step="0.01"
+                    value={calib.fixadorZ}
+                    onChange={(e) => handleUpdate('fixadorZ', Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <h4>Posicao no Poste (Bolinha Rosa)</h4>
+              <p className="ajuda-calibracao">Movimente e gire o conjunto no poste a partir da bolinha rosa:</p>
+
               <div className="controle-grupo">
                 <label>
                   <span>Altura no Poste (Y): <strong>{calib.altura.toFixed(2)} m</strong></span>
@@ -176,7 +224,7 @@ export function ConfigPanel() {
 
               <div className="controle-grupo">
                 <label>
-                  <span>Giro (Rotação Y): <strong>{calib.rotacaoY}°</strong></span>
+                  <span>Giro no Poste (Rotacao Y): <strong>{calib.rotacaoY}°</strong></span>
                   <input
                     type="range"
                     min="-180"
@@ -188,34 +236,6 @@ export function ConfigPanel() {
                 </label>
               </div>
 
-              <div className="controle-grupo">
-                <label>
-                  <span>Offset Horizontal (X): <strong>{calib.offsetX.toFixed(2)} m</strong></span>
-                  <input
-                    type="range"
-                    min="-0.8"
-                    max="0.8"
-                    step="0.01"
-                    value={calib.offsetX}
-                    onChange={(e) => handleUpdate('offsetX', Number(e.target.value))}
-                  />
-                </label>
-              </div>
-
-              <div className="controle-grupo">
-                <label>
-                  <span>Offset Profundidade (Z): <strong>{calib.offsetZ.toFixed(2)} m</strong></span>
-                  <input
-                    type="range"
-                    min="-0.8"
-                    max="0.8"
-                    step="0.01"
-                    value={calib.offsetZ}
-                    onChange={(e) => handleUpdate('offsetZ', Number(e.target.value))}
-                  />
-                </label>
-              </div>
-
               <button
                 className="btn-reset"
                 onClick={() => {
@@ -223,12 +243,13 @@ export function ConfigPanel() {
                   if (padrao) {
                     handleUpdate('altura', padrao.altura)
                     handleUpdate('rotacaoY', padrao.rotacaoY)
-                    handleUpdate('offsetX', padrao.offsetX)
-                    handleUpdate('offsetZ', padrao.offsetZ)
+                    handleUpdate('fixadorX', padrao.fixadorX)
+                    handleUpdate('fixadorY', padrao.fixadorY)
+                    handleUpdate('fixadorZ', padrao.fixadorZ)
                   }
                 }}
               >
-                Resetar para o Padrão
+                Resetar para o Padrao
               </button>
             </section>
           </div>

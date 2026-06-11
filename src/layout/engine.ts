@@ -43,11 +43,17 @@ function calcularPosicaoEquipamento(
   const rotTotal = rotBase + (cal.rotacaoY * Math.PI / 180)
   const cos = Math.cos(rotTotal)
   const sin = Math.sin(rotTotal)
+  
+  // O vetor da bolinha rosa (poste) ate o periferico eh a negacao do vetor local
+  const dx = -cal.fixadorX
+  const dy = -cal.fixadorY
+  const dz = -cal.fixadorZ
+  
   return {
     posicao: [
-      xPoste + (cal.offsetX * cos - cal.offsetZ * sin),
-      cal.altura,
-      zPoste + (cal.offsetX * sin + cal.offsetZ * cos),
+      xPoste + (dx * cos - dz * sin),
+      cal.altura + dy,
+      zPoste + (dx * sin + dz * cos),
     ],
     rotacaoY: rotTotal,
   }

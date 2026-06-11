@@ -36,14 +36,14 @@ export const CONFIG_PADRAO: ProjectConfig = {
 }
 
 export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
-  'leitor-rfid': { altura: 2.2, rotacaoY: 0, offsetX: 0, offsetZ: 0.15 },
-  'semaforo': { altura: 2.2, rotacaoY: 0, offsetX: 0.15, offsetZ: 0 },
-  'sensor-emissor': { altura: 0.75, rotacaoY: 90, offsetX: 0, offsetZ: 0.15 },
-  'sensor-receptor': { altura: 0.75, rotacaoY: -90, offsetX: 0, offsetZ: -0.15 },
-  'caixa-de-som': { altura: 2.0, rotacaoY: 90, offsetX: 0, offsetZ: 0.15 },
-  'display-mensagens': { altura: 2.2, rotacaoY: -90, offsetX: 0, offsetZ: -0.15 },
-  'camera-ip': { altura: 2.8, rotacaoY: 180, offsetX: 0, offsetZ: 0.15 },
-  'camera-ocr': { altura: 2.5, rotacaoY: 180, offsetX: 0, offsetZ: -0.15 },
+  'leitor-rfid': { altura: 2.2, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
+  'semaforo': { altura: 2.2, rotacaoY: 0, fixadorX: -0.15, fixadorY: 0, fixadorZ: 0 },
+  'sensor-emissor': { altura: 0.75, rotacaoY: 90, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
+  'sensor-receptor': { altura: 0.75, rotacaoY: -90, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
+  'caixa-de-som': { altura: 2.0, rotacaoY: 90, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
+  'display-mensagens': { altura: 2.2, rotacaoY: -90, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
+  'camera-ip': { altura: 2.8, rotacaoY: 180, fixadorX: 0, fixadorY: 0, fixadorZ: -0.15 },
+  'camera-ocr': { altura: 2.5, rotacaoY: 180, fixadorX: 0, fixadorY: 0, fixadorZ: 0.15 },
 }
 
 export const useProject = create<ProjectState>((set) => ({

@@ -71,8 +71,14 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
 
   const pecas = useMemo(() => {
     if (abaAtiva === 'calibracao') {
-      const calib = calibracoes[equipamentoCalibrando] || { altura: 0, rotacaoY: 0, offsetX: 0, offsetZ: 0 }
+      const calib = calibracoes[equipamentoCalibrando] || { altura: 0, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: 0 }
       const tipoPoste = equipamentoCalibrando === 'sensor-emissor' ? 'poste-1-5m' : 'poste-3m'
+      
+      const rotRad = calib.rotacaoY * Math.PI / 180
+      const dx = -calib.fixadorX
+      const dy = -calib.fixadorY
+      const dz = -calib.fixadorZ
+      
       return [
         {
           id: 'poste-calibracao',
@@ -86,11 +92,11 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
           tipo: equipamentoCalibrando,
           rotulo: CATALOGO[equipamentoCalibrando]?.nome || '',
           posicao: [
-            calib.offsetX * Math.cos(calib.rotacaoY * Math.PI / 180) - calib.offsetZ * Math.sin(calib.rotacaoY * Math.PI / 180),
-            calib.altura,
-            calib.offsetX * Math.sin(calib.rotacaoY * Math.PI / 180) + calib.offsetZ * Math.cos(calib.rotacaoY * Math.PI / 180),
+            dx * Math.cos(rotRad) - dz * Math.sin(rotRad),
+            calib.altura + dy,
+            dx * Math.sin(rotRad) + dz * Math.cos(rotRad),
           ] as [number, number, number],
-          rotacaoY: calib.rotacaoY * Math.PI / 180,
+          rotacaoY: rotRad,
         }
       ]
     }
@@ -132,6 +138,12 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
           mostrarRotulos={mostrarRotulos}
         />
       ))}
+      {abaAtiva === 'calibracao' && (
+        <mesh position={[0, calibracoes[equipamentoCalibrando]?.altura || 0, 0]}>
+          <sphereGeometry args={[0.035, 32, 32]} />
+          <meshBasicMaterial color="#ff00ff" depthTest={false} transparent opacity={0.9} />
+        </mesh>
+      )}
       <OrbitControls makeDefault target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.05} />
     </Canvas>
   )
