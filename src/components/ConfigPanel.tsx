@@ -22,6 +22,7 @@ const ITENS_AUTOMACAO: Array<{ key: keyof ProjectConfig; label: string }> = [
 ]
 
 const EQUIPAMENTOS_CALIBRACAO: Array<{ id: PieceTypeId; label: string }> = [
+  { id: 'cancela', label: 'Cancela' },
   { id: 'leitor-rfid', label: 'Leitor RFID' },
   { id: 'semaforo', label: 'Semáforo' },
   { id: 'sensor-emissor', label: 'Sensor Emissor' },

@@ -41,6 +41,13 @@ export interface PieceInstance {
   posicao: [number, number, number]
   /** Rotação em torno de Y, em radianos */
   rotacaoY: number
+  /**
+   * Ponto de ancoragem (centro do fixador) nas coordenadas locais do modelo.
+   * Quando presente, `posicao` e `rotacaoY` referem-se a ESTE ponto, não à
+   * origem do modelo: a peça é deslocada para que a âncora caia em `posicao`
+   * e o giro acontece em torno dela (= em torno do eixo do poste).
+   */
+  ancora?: [number, number, number]
   /** Ajuste fino manual somado à posição calculada */
   offset?: [number, number, number]
 }

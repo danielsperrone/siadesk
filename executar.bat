@@ -25,7 +25,7 @@ rem Verifica se a pasta node_modules existe, se nao, instala as dependencias
 if not exist node_modules (
     color 0E
     echo [AVISO] A pasta 'node_modules' nao foi encontrada.
-    echo [INFO] Instalando as dependencias do projeto (npm install)...
+    echo [INFO] Instalando as dependencias do projeto ^(npm install^)...
     echo.
     call npm install
     if %errorlevel% neq 0 (

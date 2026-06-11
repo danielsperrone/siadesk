@@ -98,15 +98,19 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
     }
 
     if (habilitado.cancela) {
-      pecas.push({
-        id: `cancela-${sufixo}`,
-        tipo: 'cancela',
-        rotulo: `Cancela de ${nome}`,
-        posicao: [xCancela, 0, ladoMotorista],
-        // O braço do GLB estende-se para -Z local; com rotação π ele cruza
-        // a pista (+Z) a partir do gabinete no acostamento
-        rotacaoY: Math.PI,
-      })
+      pecas.push(
+        (() => {
+          const l = calcularPosicaoEquipamento(xCancela, ladoMotorista, Math.PI, calibracoes['cancela'])
+          return {
+            id: `cancela-${sufixo}`,
+            tipo: 'cancela',
+            rotulo: `Cancela de ${nome}`,
+            posicao: l.posicao,
+            rotacaoY: l.rotacaoY,
+            ancora: l.ancora,
+          }
+        })()
+      )
       if (cfg.lacosIndutivos) {
         pecas.push({
           id: `laco-${sufixo}`,

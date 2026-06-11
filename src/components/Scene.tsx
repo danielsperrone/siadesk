@@ -84,7 +84,7 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
           ? ('poste-1-5m' as const)
           : ('poste-3m' as const)
 
-      return [
+      const lista = [
         // --- Painel esquerdo: peça de referência PARADA; a bolinha rosa é
         // posicionada sobre ela para marcar o centro do fixador
         {
@@ -97,13 +97,6 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
         // --- Painel direito: preview montado no poste; altura e giro
         // acontecem em torno da âncora (= bolinha), nunca saindo do poste
         {
-          id: 'poste-calibracao',
-          tipo: tipoPoste,
-          rotulo: tipoPoste === 'poste-1-5m' ? 'Poste de 1,5 m' : 'Poste de 3,0 m',
-          posicao: [1.2, 0, 0] as [number, number, number],
-          rotacaoY: 0,
-        },
-        {
           id: 'periferico-montado',
           tipo: equipamentoCalibrando,
           rotulo: 'Montado (preview)',
@@ -112,6 +105,18 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
           ancora: [calib.fixadorX, calib.fixadorY, calib.fixadorZ] as [number, number, number],
         },
       ]
+
+      if (equipamentoCalibrando !== 'cancela') {
+        lista.push({
+          id: 'poste-calibracao',
+          tipo: tipoPoste,
+          rotulo: tipoPoste === 'poste-1-5m' ? 'Poste de 1,5 m' : 'Poste de 3,0 m',
+          posicao: [1.2, 0, 0] as [number, number, number],
+          rotacaoY: 0,
+        })
+      }
+
+      return lista
     }
     return gerarLayout(config, calibracoes)
   }, [config, abaAtiva, equipamentoCalibrando, calibracoes, calib])
