@@ -41,3 +41,4 @@ ehthumbs.db
 # Agent files
 .claude/
 .gemini/
+antigravity_remote/
