@@ -8,20 +8,24 @@ import { useModelosDisponiveis } from '../hooks/useModelosDisponiveis'
 import { CATALOGO } from '../catalog/pieces'
 import { Piece } from './Piece'
 
-function Pista({ comprimentoBalanca }: { comprimentoBalanca: number }) {
+function Pista({ comprimentoBalanca, mostrarPista, mostrarGrama }: { comprimentoBalanca: number; mostrarPista: boolean; mostrarGrama: boolean }) {
   const comprimentoTotal = comprimentoBalanca + 2 * COMPRIMENTO_PISTA_CENA
   return (
     <group>
       {/* Faixa de asfalto ao longo do fluxo */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[comprimentoTotal, LARGURA_PISTA]} />
-        <meshStandardMaterial color="#3a3d40" />
-      </mesh>
+      {mostrarPista && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+          <planeGeometry args={[comprimentoTotal, LARGURA_PISTA]} />
+          <meshStandardMaterial color="#3a3d40" />
+        </mesh>
+      )}
       {/* Terreno */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
-        <planeGeometry args={[comprimentoTotal + 20, 60]} />
-        <meshStandardMaterial color="#6b7d5e" />
-      </mesh>
+      {mostrarGrama && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+          <planeGeometry args={[comprimentoTotal + 20, 60]} />
+          <meshStandardMaterial color="#6b7d5e" />
+        </mesh>
+      )}
     </group>
   )
 }
@@ -62,7 +66,17 @@ function AtualizadorCamera({ abaAtiva }: { abaAtiva: string }) {
   return null
 }
 
-export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
+export function Scene({
+  mostrarRotulos,
+  mostrarGrades,
+  mostrarPista,
+  mostrarGrama,
+}: {
+  mostrarRotulos: boolean
+  mostrarGrades: boolean
+  mostrarPista: boolean
+  mostrarGrama: boolean
+}) {
   const config = useProject((s) => s.config)
   const abaAtiva = useProject((s) => s.abaAtiva)
   const equipamentoCalibrando = useProject((s) => s.equipamentoCalibrando)
@@ -129,7 +143,7 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
     >
       <ExporCenaDev />
       <AtualizadorCamera abaAtiva={abaAtiva} />
-      <color attach="background" args={['#cfe0ec']} />
+      <color attach="background" args={['#ffffff']} />
       <ambientLight intensity={0.6} />
       <directionalLight
         position={[20, 30, 10]}
@@ -137,17 +151,25 @@ export function Scene({ mostrarRotulos }: { mostrarRotulos: boolean }) {
         castShadow
         shadow-mapSize={[2048, 2048]}
       />
-      {abaAtiva !== 'calibracao' && <Pista comprimentoBalanca={config.comprimentoBalanca} />}
-      <Grid
-        position={[0, 0.01, 0]}
-        args={[80, 80]}
-        cellSize={1}
-        sectionSize={5}
-        cellColor="#9aa7b0"
-        sectionColor="#5f6e78"
-        fadeDistance={70}
-        infiniteGrid
-      />
+      {abaAtiva !== 'calibracao' && (
+        <Pista
+          comprimentoBalanca={config.comprimentoBalanca}
+          mostrarPista={mostrarPista}
+          mostrarGrama={mostrarGrama}
+        />
+      )}
+      {mostrarGrades && (
+        <Grid
+          position={[0, 0.01, 0]}
+          args={[80, 80]}
+          cellSize={1}
+          sectionSize={5}
+          cellColor="#9aa7b0"
+          sectionColor="#5f6e78"
+          fadeDistance={70}
+          infiniteGrid
+        />
+      )}
       {pecas.map((p) => (
         <Piece
           key={p.id}

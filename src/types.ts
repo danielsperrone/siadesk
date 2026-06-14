@@ -4,6 +4,8 @@
 export type PieceTypeId =
   | 'balanca'
   | 'cancela'
+  | 'cancela-lado-a'
+  | 'cancela-lado-b'
   | 'semaforo'
   | 'camera-ip'
   | 'camera-ip-baixo'
@@ -20,6 +22,13 @@ export type PieceTypeId =
   | 'caixa-de-som'
   | 'veiculo'
   | 'laco-indutivo'
+
+export interface PostePeriferico {
+  id: string
+  tipo: PieceTypeId
+  altura: number
+  rotacaoY: number // em graus, ex: -180 a 180
+}
 
 export interface PieceType {
   id: PieceTypeId
@@ -53,15 +62,75 @@ export interface PieceInstance {
 }
 
 export interface ProjectConfig {
+  nomeProjeto: string
+  codigoProposta: string
   cliente: string
   obra: string
   /** Comprimento da plataforma em metros (referência de posicionamento) */
   comprimentoBalanca: number
   /** Largura da plataforma em metros */
   larguraBalanca: number
+  // Novos Postes Cabeceira A
+  siap01: boolean
+  siap02: boolean
+  siap03: boolean
+  siap04: boolean
+  // Novos Postes Cabeceira B
+  siap05: boolean
+  siap06: boolean
+  siap07: boolean
+  siap08: boolean
+  // Novos Postes Plataforma (Meio)
+  siap09: boolean
+  // Distâncias personalizadas em relação à cabeceira (eixo X)
+  distanciaSiap01: number
+  distanciaSiap02: number
+  distanciaSiap03: number
+  distanciaSiap04: number
+  distanciaSiap05: number
+  distanciaSiap06: number
+  distanciaSiap07: number
+  distanciaSiap08: number
+  distanciaSiap09: number
+  // Afastamento lateral personalizado (eixo Z)
+  afastamentoZSiap01: number
+  afastamentoZSiap02: number
+  afastamentoZSiap03: number
+  afastamentoZSiap04: number
+  afastamentoZSiap05: number
+  afastamentoZSiap06: number
+  afastamentoZSiap07: number
+  afastamentoZSiap08: number
+  afastamentoZSiap09: number
+  // Indica se o poste tem posicionamento personalizado (botão Alterar ativado)
+  customSiap01: boolean
+  customSiap02: boolean
+  customSiap03: boolean
+  customSiap04: boolean
+  customSiap05: boolean
+  customSiap06: boolean
+  customSiap07: boolean
+  customSiap08: boolean
+  customSiap09: boolean
+  // Periféricos de cada poste
+  perifericosSiap01: PostePeriferico[]
+  perifericosSiap02: PostePeriferico[]
+  perifericosSiap03: PostePeriferico[]
+  perifericosSiap04: PostePeriferico[]
+  perifericosSiap05: PostePeriferico[]
+  perifericosSiap06: PostePeriferico[]
+  perifericosSiap07: PostePeriferico[]
+  perifericosSiap08: PostePeriferico[]
+  perifericosSiap09: PostePeriferico[]
   // Itens de automação selecionados (montagens SIAP: poste + equipamentos)
   cancelaEntrada: boolean
   cancelaSaida: boolean
+  distanciaCancelaEntrada: number
+  afastamentoZCancelaEntrada: number
+  customCancelaEntrada: boolean
+  distanciaCancelaSaida: number
+  afastamentoZCancelaSaida: number
+  customCancelaSaida: boolean
   /** SIAP01: poste 3 m + leitor RFID */
   rfidEntrada: boolean
   rfidSaida: boolean
@@ -82,6 +151,8 @@ export interface ProjectConfig {
   lacosIndutivos: boolean
   /** Caminhão ilustrativo sobre a balança */
   mostrarVeiculo: boolean
+  inverterLateralEntrada: boolean
+  inverterLateralSaida: boolean
 }
 
 export interface CalibrationData {

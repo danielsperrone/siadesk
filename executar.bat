@@ -1,4 +1,18 @@
 @echo off
+
+rem Encerra janelas CMD antigas que rodam o executor do SIADESK antes de renomear esta janela
+taskkill /fi "windowtitle eq SIADESK - Executor Web" /t /f >nul 2>&1
+
+rem Libera a porta 5173 (porta padrao do Vite) se houver algum processo orfao
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5173') do (
+    taskkill /f /pid %%a >nul 2>&1
+)
+
+rem Libera a porta 5174 (porta reserva do Vite) se houver algum processo orfao
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5174') do (
+    taskkill /f /pid %%a >nul 2>&1
+)
+
 title SIADESK - Executor Web
 color 0B
 

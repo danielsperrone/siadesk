@@ -20,6 +20,22 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
     placeholder: [0.65, 1.37, 0.65],
     cor: '#e67e22',
   },
+  'cancela-lado-a': {
+    id: 'cancela-lado-a',
+    nome: 'Cancela automática (Lado A)',
+    descricao: 'Cancela automática - Lado A',
+    modelo: 'cancela-lado-a',
+    placeholder: [0.65, 1.37, 4.24],
+    cor: '#e67e22',
+  },
+  'cancela-lado-b': {
+    id: 'cancela-lado-b',
+    nome: 'Cancela automática (Lado B)',
+    descricao: 'Cancela automática - Lado B',
+    modelo: 'cancela-lado-b',
+    placeholder: [0.65, 1.37, 4.24],
+    cor: '#d35400',
+  },
   semaforo: {
     id: 'semaforo',
     nome: 'Semáforo',
