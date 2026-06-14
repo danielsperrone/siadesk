@@ -1,0 +1,5 @@
+# Diretrizes e Regras do Projeto (Project Rules)
+
+- **Commit e Push Automático**: Sempre que você fizer alterações de código, arquivos ou modelos 3D neste repositório, você deve obrigatoriamente adicionar tudo, realizar o commit com uma mensagem descritiva (em português) e fazer o `git push origin main` para o repositório remoto ao término do seu turno de trabalho.
+- **Validação de Build**: Sempre execute `npm run build` antes de realizar o commit para garantir que o projeto não possui erros de compilação.
+- **Idioma**: Responda aos comandos e comente no código sempre em português do Brasil.
