@@ -32,10 +32,20 @@ function adicionarPerifericosPoste(
     const anguloGraus = perif.rotacaoY + cal.rotacaoY
     const anguloFinal = inverterZ ? -anguloGraus : anguloGraus
     const rotacaoRadianos = (anguloFinal * Math.PI) / 180
+    
+    let nomeEquipamento = CATALOGO[perif.tipo]?.nome || 'Equipamento'
+    if (idPoste === 'siap09') {
+      if (perif.id === 'camera-siap09-ampla' || perif.tipo === 'camera-ip') {
+        nomeEquipamento = 'Câmera Superior 01 - Visão geral da plataforma'
+      } else if (perif.id === 'camera-siap09-auditoria' || perif.tipo === 'camera-ip-baixo') {
+        nomeEquipamento = 'Câmera Superior 02 - Visão complementar / auditoria superior'
+      }
+    }
+
     pecas.push({
       id: perif.id,
       tipo: perif.tipo,
-      rotulo: `${CATALOGO[perif.tipo]?.nome || 'Equipamento'} — ${idPoste.toUpperCase()}`,
+      rotulo: `${nomeEquipamento} — ${idPoste.toUpperCase()}`,
       posicao: [xPoste, perif.altura, zPoste],
       rotacaoY: rotacaoRadianos,
       ancora: [cal.fixadorX, cal.fixadorY, cal.fixadorZ],
@@ -249,6 +259,41 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
       rotacaoY: 0,
     })
     adicionarPerifericosPoste(pecas, 'siap09', xPoste, zPoste, cfg.perifericosSiap09 ?? [], calibracoes, false)
+  }
+
+  // --- Painéis centrais (SIAMAC e Som) ---------------------------------------
+  // Não vinculados a poste. Partem do meio da balança (X=0), no lado da cabine
+  // (+Z), à distância configurada (distanciaPainelAutomacao). Com os dois ativos,
+  // ficam lado a lado no eixo X com ~0,5 m de folga entre as bordas, centralizados
+  // como conjunto em X=0. Ficam voltados para a balança (rotacaoY = PI).
+  const paineisAtivos: Array<{ id: string; tipo: PieceInstance['tipo'] }> = []
+  if (cfg.painelAutomacao) paineisAtivos.push({ id: 'painel-siamac', tipo: 'painel-automacao' })
+  if (cfg.painelSom) paineisAtivos.push({ id: 'painel-som', tipo: 'painel-som' })
+  if (paineisAtivos.length > 0) {
+    const zPainel = metadeLargura + (cfg.distanciaPainelAutomacao ?? 15)
+    const folga = 0.5
+    // Espaçamento centro-a-centro entre painéis adjacentes (meia-largura de cada + folga)
+    const larguras = paineisAtivos.map((pa) => CATALOGO[pa.tipo].placeholder[0])
+    const espacamentos = paineisAtivos.map((_, i) =>
+      i === 0 ? 0 : larguras[i - 1] / 2 + folga + larguras[i] / 2,
+    )
+    // Posição X acumulada e depois recentrada em torno de 0
+    const xAcum: number[] = []
+    espacamentos.reduce((acc, e, i) => {
+      const x = acc + e
+      xAcum[i] = x
+      return x
+    }, 0)
+    const centro = (xAcum[0] + xAcum[xAcum.length - 1]) / 2
+    paineisAtivos.forEach((pa, i) => {
+      pecas.push({
+        id: pa.id,
+        tipo: pa.tipo,
+        rotulo: CATALOGO[pa.tipo].nome,
+        posicao: [xAcum[i] - centro, 0, zPainel],
+        rotacaoY: Math.PI,
+      })
+    })
   }
 
   // Aplica ajuste fino manual, quando existir

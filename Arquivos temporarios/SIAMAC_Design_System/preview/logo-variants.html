@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Brand" name="Logo · Light & Dark" subtitle="Light + inverse versions" viewport="700x140" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;font-family:var(--font-sans);}
+  body{display:grid;grid-template-columns:1fr 1fr;}
+  .pane{padding:28px 32px;display:flex;align-items:center;gap:24px;}
+  .light{background:#FFFFFF;}
+  .dark{background:var(--ink-900);color:#fff;}
+  .label{font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;}
+  .name{font-family:var(--font-display);font-weight:700;font-size:14px;margin-top:6px;}
+  /* On dark surfaces we use the original artwork inverted to white. */
+  .invert{filter:brightness(0) invert(1);}
+</style></head>
+<body>
+  <div class="pane light">
+    <img src="../assets/logo/siamac-logo-color.webp" style="height:46px;"/>
+    <div><div class="label" style="color:var(--fg-3);">Light</div><div class="name" style="color:var(--fg-1);">Logo padrão</div></div>
+  </div>
+  <div class="pane dark">
+    <img src="../assets/logo/siamac-logo-color.webp" class="invert" style="height:46px;"/>
+    <div><div class="label">Dark</div><div class="name">Logo inverso</div></div>
+  </div>
+</body></html>

@@ -13,7 +13,19 @@ const EQUIPAMENTOS_CALIBRACAO: Array<{ id: PieceTypeId; label: string }> = [
   { id: 'display-mensagens', label: 'Display de Mensagens' },
   { id: 'camera-ip', label: 'Câmera IP POE' },
   { id: 'camera-ocr', label: 'Câmera OCR' },
-  { id: 'camera-ip-baixo', label: 'Câmera de Reconhecimento' },
+  { id: 'camera-ip-baixo', label: 'Câmera IP de Auditoria de Carga (Superior)' },
+]
+
+const OPCOES_EQUIPAMENTOS_ADICIONAIS = [
+  'Roteador POE 8 portas',
+  'Roteador POE 12 portas',
+  'Roteador POE 16 portas',
+  'Roteador POE 20 portas',
+  'TAG RFID Guarda Chuva',
+  'TAG RFID Bolacha',
+  'TAG RFID colável',
+  'leitor RFID de mesa',
+  'Microfone'
 ]
 
 export function ConfigPanel() {
@@ -23,6 +35,9 @@ export function ConfigPanel() {
   const [posteEditandoDistancia, setPosteEditandoDistancia] = useState<string | null>(null)
   const [posteEditandoPerifericos, setPosteEditandoPerifericos] = useState<string | null>(null)
   const [perifericoSelecionadoParaAdicionar, setPerifericoSelecionadoParaAdicionar] = useState<string>('camera-ip')
+  const [modalAdicionaisAberto, setModalAdicionaisAberto] = useState(false)
+  const [equipamentoAdicionalSelecionado, setEquipamentoAdicionalSelecionado] = useState(OPCOES_EQUIPAMENTOS_ADICIONAIS[0])
+  const [quantidadeAdicional, setQuantidadeAdicional] = useState(1)
   
   const abaAtiva = useProject((s) => s.abaAtiva)
   const equipamentoCalibrando = useProject((s) => s.equipamentoCalibrando)
@@ -104,6 +119,101 @@ export function ConfigPanel() {
                   step={0.1}
                   value={config.larguraBalanca}
                   onChange={(e) => setConfig('larguraBalanca', Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Tipo de instalação
+                <select
+                  value={config.tipoInstalacaoBalanca ?? 'sobrepor'}
+                  onChange={(e) => setConfig('tipoInstalacaoBalanca', e.target.value as ProjectConfig['tipoInstalacaoBalanca'])}
+                >
+                  <option value="sobrepor">De sobrepor</option>
+                  <option value="semiembutida">Semiembutida</option>
+                  <option value="embutida">Embutida</option>
+                </select>
+              </label>
+            </section>
+
+            <section>
+              <h2>Painéis Centrais</h2>
+              <p style={{ fontSize: '11px', color: '#8fa3b3', lineHeight: '1.4', marginTop: 0 }}>
+                Painéis concentradores de cabos. Não ficam em poste: partem do meio da balança, no
+                lado da cabine, à distância definida abaixo. Com os dois ativos, ficam lado a lado
+                (0,5 m entre eles) centralizados como conjunto.
+              </p>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={config.painelAutomacao}
+                  onChange={(e) => setConfig('painelAutomacao', e.target.checked)}
+                />
+                Painel SIAMAC (automação)
+              </label>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={config.painelSom}
+                  onChange={(e) => setConfig('painelSom', e.target.checked)}
+                />
+                Painel de Som
+              </label>
+            </section>
+
+            <section>
+              <h2>Distâncias para Cabeamento</h2>
+              <label>
+                Meio da Balança até os Painéis (SIAMAC / Som) (m)
+                <input
+                  type="number"
+                  min={0}
+                  max={200}
+                  step={1}
+                  value={config.distanciaPainelAutomacao ?? 15}
+                  onChange={(e) => setConfig('distanciaPainelAutomacao', Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Meio da Balança até Quadro Distribuição (m)
+                <input
+                  type="number"
+                  min={0}
+                  max={200}
+                  step={1}
+                  value={config.distanciaQuadroDistribuicao ?? 10}
+                  onChange={(e) => setConfig('distanciaQuadroDistribuicao', Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Meio da Balança até Roteador POE (m)
+                <input
+                  type="number"
+                  min={0}
+                  max={200}
+                  step={1}
+                  value={config.distanciaRoteadorPoE ?? 20}
+                  onChange={(e) => setConfig('distanciaRoteadorPoE', Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Painéis (SIAMAC / Som) até Quadro de Distribuição (m)
+                <input
+                  type="number"
+                  min={0}
+                  max={200}
+                  step={1}
+                  value={config.distanciaPainelQuadro ?? 5}
+                  onChange={(e) => setConfig('distanciaPainelQuadro', Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Painéis (SIAMAC / Som) até Roteador POE (m)
+                <input
+                  type="number"
+                  min={0}
+                  max={200}
+                  step={1}
+                  value={config.distanciaPainelRoteador ?? 5}
+                  onChange={(e) => setConfig('distanciaPainelRoteador', Number(e.target.value))}
                 />
               </label>
             </section>
@@ -978,6 +1088,32 @@ export function ConfigPanel() {
                 Mostrar caminhão ilustrativo
               </label>
             </section>
+
+            <section style={{ marginTop: '20px' }}>
+              <h2>Equipamentos Adicionais</h2>
+              <button
+                type="button"
+                onClick={() => setModalAdicionaisAberto(true)}
+                style={{
+                  width: '100%',
+                  padding: '10px 16px',
+                  background: '#1e293b',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  marginTop: '10px'
+                }}
+              >
+                📦 Equipamentos Adicionais
+              </button>
+            </section>
           </>
         )}
 
@@ -1229,7 +1365,7 @@ export function ConfigPanel() {
                   >
                     <option value="camera-ip">Câmera IP POE</option>
                     <option value="camera-ocr">Câmera OCR de Placas</option>
-                    <option value="camera-ip-baixo">Câmera de Reconhecimento (Baixo)</option>
+                    <option value="camera-ip-baixo">Câmera IP de Auditoria de Carga (Superior)</option>
                     <option value="leitor-rfid">Leitor Antena RFID</option>
                     <option value="semaforo">Semáforo</option>
                     <option value="sensor-emissor">Sensor Barreira (Emissor)</option>
@@ -1371,6 +1507,234 @@ export function ConfigPanel() {
           </div>
         )
       })()}
+
+      {/* Modal de Equipamentos Adicionais */}
+      {modalAdicionaisAberto && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          pointerEvents: 'none',
+          zIndex: 20000000,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'flex-start',
+          padding: '75px 20px 20px 20px',
+        }}>
+          <div style={{
+            background: 'rgba(30, 41, 59, 0.93)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
+            padding: '24px',
+            width: '380px',
+            maxHeight: 'calc(100vh - 95px)',
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            color: '#f8fafc',
+            pointerEvents: 'auto',
+            animation: 'slideUp 0.3s ease-out',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#fff' }}>
+                Equipamentos Adicionais
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModalAdicionaisAberto(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Form de Adicionar */}
+            <div style={{
+              background: '#0f172a',
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #1e293b',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              alignItems: 'stretch',
+            }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
+                Selecionar Equipamento
+                <select
+                  value={equipamentoAdicionalSelecionado}
+                  onChange={(e) => setEquipamentoAdicionalSelecionado(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    background: '#1e293b',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    width: '100%',
+                  }}
+                >
+                  {OPCOES_EQUIPAMENTOS_ADICIONAIS.map(opcao => (
+                    <option key={opcao} value={opcao}>{opcao}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
+                Quantidade
+                <input
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={quantidadeAdicional}
+                  onChange={(e) => setQuantidadeAdicional(Math.max(1, parseInt(e.target.value) || 1))}
+                  style={{
+                    padding: '8px 12px',
+                    background: '#1e293b',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '13px',
+                    width: '100%',
+                  }}
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const novosEquipamentos = [...(config.equipamentosAdicionais || [])];
+                  const indexExistente = novosEquipamentos.findIndex(e => e.nome === equipamentoAdicionalSelecionado);
+                  if (indexExistente > -1) {
+                    novosEquipamentos[indexExistente].quantidade += quantidadeAdicional;
+                  } else {
+                    novosEquipamentos.push({
+                      id: `${Date.now()}-${Math.random()}`,
+                      nome: equipamentoAdicionalSelecionado,
+                      quantidade: quantidadeAdicional
+                    });
+                  }
+                  setConfig('equipamentosAdicionais', novosEquipamentos);
+                  setQuantidadeAdicional(1);
+                }}
+                style={{
+                  padding: '10px 16px',
+                  background: '#10b981',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  marginTop: '4px'
+                }}
+              >
+                Adicionar
+              </button>
+            </div>
+
+            {/* Lista de Equipamentos Adicionais */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: '#94a3b8' }}>
+                Adicionados ({config.equipamentosAdicionais?.length || 0})
+              </h4>
+
+              {(!config.equipamentosAdicionais || config.equipamentosAdicionais.length === 0) ? (
+                <div style={{
+                  padding: '24px',
+                  textAlign: 'center',
+                  background: '#0f172a',
+                  border: '1px dashed #334155',
+                  borderRadius: '8px',
+                  color: '#64748b',
+                  fontSize: '13px',
+                }}>
+                  Nenhum equipamento adicional adicionado.
+                </div>
+              ) : (
+                config.equipamentosAdicionais.map((eq) => (
+                  <div
+                    key={eq.id}
+                    style={{
+                      background: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '8px',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '13px', color: '#10b981' }}>
+                        {eq.nome}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                        Quantidade: {eq.quantidade}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const novaLista = config.equipamentosAdicionais.filter(item => item.id !== eq.id);
+                        setConfig('equipamentosAdicionais', novaLista);
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ef4444',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                      }}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #334155', paddingTop: '16px', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setModalAdicionaisAberto(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#334155',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                Concluído
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

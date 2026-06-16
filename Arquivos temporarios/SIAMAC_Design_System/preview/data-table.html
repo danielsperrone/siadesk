@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Data table" subtitle="Weighing-ticket list pattern" viewport="700x230" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:var(--ink-50);font-family:var(--font-sans);}
+  body{padding:28px;}
+  .tbl{background:#fff;border:1px solid var(--ink-75);border-radius:10px;overflow:hidden;box-shadow:var(--shadow-1);}
+  table{width:100%;border-collapse:collapse;}
+  th{font-family:var(--font-display);font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3);text-align:left;padding:10px 14px;background:var(--ink-25);border-bottom:1px solid var(--ink-75);}
+  td{padding:11px 14px;font-family:var(--font-sans);font-size:13px;color:var(--fg-2);border-bottom:1px solid var(--ink-50);}
+  tr:last-child td{border-bottom:none;}
+  .mono{font-family:var(--font-mono);color:var(--fg-1);font-variant-numeric:tabular-nums;}
+  .plate{font-family:var(--font-mono);font-weight:700;color:var(--fg-1);background:var(--ink-50);padding:2px 8px;border-radius:4px;font-size:11px;}
+  .b{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-weight:600;font-size:10px;}
+  .b-ok{background:var(--color-success-soft);color:var(--color-success-fg);}
+  .b-out{background:var(--color-danger-soft);color:var(--color-danger-fg);}
+  .b-prog{background:var(--color-info-soft);color:var(--color-info-fg);}
+</style></head>
+<body>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Ticket</th><th>Placa</th><th>Cliente</th><th>Peso líq.</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">#1827</td><td><span class="plate">BRA-2E19</span></td><td>COFCO Brasil</td><td class="mono">17.600 kg</td><td><span class="b b-ok">Concluída</span></td></tr>
+        <tr><td class="mono">#1826</td><td><span class="plate">RIO-4H82</span></td><td>JBS Aves</td><td class="mono">12.840 kg</td><td><span class="b b-prog">Em pesagem</span></td></tr>
+        <tr><td class="mono">#1825</td><td><span class="plate">PRD-9K01</span></td><td>Cargill</td><td class="mono">21.300 kg</td><td><span class="b b-out">Tolerância</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</body></html>

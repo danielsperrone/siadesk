@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Spacing" name="Radii" subtitle="Industrial: square-leaning corners" viewport="700x170" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:#fff;font-family:var(--font-sans);}
+  body{padding:24px 28px;display:flex;align-items:flex-end;gap:22px;justify-content:space-around;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .box{width:78px;height:78px;background:var(--siamac-blue-50);border:1px solid var(--siamac-blue-100);}
+  .name{font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--fg-1);}
+  .tok{font-family:var(--font-mono);font-size:10px;color:var(--fg-3);}
+</style></head>
+<body>
+  <div class="col"><div class="box" style="border-radius:2px;"></div><div class="name">2px</div><div class="tok">--radius-xs</div></div>
+  <div class="col"><div class="box" style="border-radius:4px;"></div><div class="name">4px</div><div class="tok">--radius-sm</div></div>
+  <div class="col"><div class="box" style="border-radius:6px;"></div><div class="name">6px · default</div><div class="tok">--radius-md</div></div>
+  <div class="col"><div class="box" style="border-radius:10px;"></div><div class="name">10px · cards</div><div class="tok">--radius-lg</div></div>
+  <div class="col"><div class="box" style="border-radius:16px;"></div><div class="name">16px · sheets</div><div class="tok">--radius-xl</div></div>
+  <div class="col"><div class="box" style="border-radius:999px;"></div><div class="name">pill</div><div class="tok">--radius-pill</div></div>
+</body></html>

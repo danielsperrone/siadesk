@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Form inputs" subtitle="Text, select, focus, error states" viewport="700x260" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:#fff;font-family:var(--font-sans);}
+  body{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .lbl{font-family:var(--font-sans);font-weight:500;font-size:12px;color:var(--fg-2);}
+  .req{color:var(--siamac-red-700);}
+  .input{font-family:var(--font-sans);font-size:13px;padding:9px 12px;border:1px solid var(--ink-100);border-radius:6px;background:#fff;color:var(--fg-1);outline:none;}
+  .input:focus,.input.foc{border-color:var(--siamac-blue-500);box-shadow:var(--shadow-focus);}
+  .input.err{border-color:var(--siamac-red-500);box-shadow:0 0 0 3px rgba(178,42,42,.18);}
+  .help{font-family:var(--font-sans);font-size:11px;color:var(--fg-3);}
+  .help.err{color:var(--siamac-red-700);}
+  .select{position:relative;}
+  .select::after{content:"▾";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-3);font-size:10px;pointer-events:none;}
+</style></head>
+<body>
+  <div class="field">
+    <label class="lbl">Placa do veículo <span class="req">*</span></label>
+    <input class="input" value="BRA-2E19"/>
+    <div class="help">Formato Mercosul ou antigo</div>
+  </div>
+  <div class="field">
+    <label class="lbl">Operador</label>
+    <div class="select"><input class="input" style="padding-right:30px;width:100%;box-sizing:border-box;" value="Marcos A. (turno A)" readonly/></div>
+  </div>
+  <div class="field">
+    <label class="lbl">Peso da tara</label>
+    <input class="input foc" value="14.880" style="font-family:var(--font-mono);"/>
+    <div class="help">kg · lido do indicador</div>
+  </div>
+  <div class="field">
+    <label class="lbl">Nota fiscal</label>
+    <input class="input err" value="abc"/>
+    <div class="help err">Apenas dígitos. Ex.: 0034871</div>
+  </div>
+</body></html>

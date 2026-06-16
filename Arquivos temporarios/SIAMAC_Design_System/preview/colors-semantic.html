@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Colors" name="Colors · Semantic roles" subtitle="Primary, success, warning, danger" viewport="700x170" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:#fff;font-family:var(--font-sans);}
+  body{padding:24px 28px;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .card{border:1px solid var(--ink-75);border-radius:10px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;}
+  .swatch{height:36px;border-radius:6px;}
+  .name{font-family:var(--font-display);font-weight:700;font-size:12px;}
+  .hex{font-family:var(--font-mono);font-size:10px;color:var(--fg-3);}
+  .role{font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);}
+</style></head>
+<body>
+  <div class="grid">
+    <div class="card">
+      <div class="swatch" style="background:var(--color-primary);"></div>
+      <div class="role">Primary</div>
+      <div class="name" style="color:var(--fg-1);">Navy</div>
+      <div class="hex">#004788</div>
+    </div>
+    <div class="card">
+      <div class="swatch" style="background:var(--color-success);"></div>
+      <div class="role">Success</div>
+      <div class="name" style="color:var(--fg-1);">Emerald</div>
+      <div class="hex">#018743</div>
+    </div>
+    <div class="card">
+      <div class="swatch" style="background:var(--color-warning);"></div>
+      <div class="role">Warning</div>
+      <div class="name" style="color:var(--fg-1);">Amber</div>
+      <div class="hex">#B4750A</div>
+    </div>
+    <div class="card">
+      <div class="swatch" style="background:var(--color-danger);"></div>
+      <div class="role">Danger</div>
+      <div class="name" style="color:var(--fg-1);">Bordeaux</div>
+      <div class="hex">#800000</div>
+    </div>
+  </div>
+</body></html>

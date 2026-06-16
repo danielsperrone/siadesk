@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Colors" name="Colors · Brand bars" subtitle="The three signature logo colors" viewport="700x190" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:#fff;font-family:var(--font-sans);}
+  body{padding:32px;display:flex;align-items:center;gap:36px;}
+  .stack{display:flex;flex-direction:column;gap:8px;width:160px;}
+  .bar{height:28px;border-radius:2px;}
+  .swatches{display:flex;gap:18px;}
+  .sw{display:flex;flex-direction:column;gap:10px;align-items:flex-start;}
+  .chip{width:88px;height:88px;border-radius:8px;box-shadow:var(--shadow-inset);}
+  .meta{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--fg-1);}
+  .hex{font-family:var(--font-mono);font-size:12px;color:var(--fg-3);}
+</style></head>
+<body>
+  <div class="stack">
+    <div class="bar" style="background:#800000;"></div>
+    <div class="bar" style="background:#018743;"></div>
+    <div class="bar" style="background:#004788;"></div>
+    <div style="margin-top:6px;font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--fg-1);">As três barras</div>
+    <div class="hex">A assinatura visual da marca</div>
+  </div>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#800000;"></div><div><div class="meta">Bordeaux</div><div class="hex">#800000</div></div></div>
+    <div class="sw"><div class="chip" style="background:#018743;"></div><div><div class="meta">Emerald</div><div class="hex">#018743</div></div></div>
+    <div class="sw"><div class="chip" style="background:#004788;"></div><div><div class="meta">Navy</div><div class="hex">#004788</div></div></div>
+    <div class="sw"><div class="chip" style="background:#0B0F14;"></div><div><div class="meta">Near-black</div><div class="hex">#0B0F14</div></div></div>
+  </div>
+</body></html>

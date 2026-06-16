@@ -37,7 +37,8 @@ ipcMain.handle('export-pdf', async (event) => {
   if (canceled || !filePath) return { ok: false, error: 'cancelado' }
 
   const data = await win.webContents.printToPDF({
-    pageSize: 'A4',
+    pageSize: 'A3',
+    landscape: true,
     printBackground: true,
   })
   fs.writeFileSync(filePath, data)

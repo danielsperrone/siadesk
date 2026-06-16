@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Buttons" subtitle="Primary, secondary, ghost, danger" viewport="700x260" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:#fff;font-family:var(--font-sans);}
+  body{padding:24px 28px;display:flex;flex-direction:column;gap:14px;}
+  .row{display:flex;align-items:center;gap:10px;}
+  .lbl{font-family:var(--font-mono);font-size:10px;color:var(--fg-3);width:84px;flex-shrink:0;}
+  .btn{font-family:var(--font-sans);font-weight:600;font-size:13px;padding:9px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1;transition:all 120ms var(--easing-standard);}
+  .btn-primary{background:var(--color-primary);color:#fff;}
+  .btn-primary.hov{background:var(--color-primary-hover);}
+  .btn-primary.foc{background:var(--color-primary);box-shadow:var(--shadow-focus);}
+  .btn-secondary{background:#fff;color:var(--fg-1);border-color:var(--ink-100);}
+  .btn-secondary.hov{background:var(--ink-25);border-color:var(--ink-200);}
+  .btn-ghost{background:transparent;color:var(--color-primary);}
+  .btn-ghost.hov{background:var(--siamac-blue-50);}
+  .btn-danger{background:var(--color-danger);color:#fff;}
+  .btn[disabled]{background:var(--ink-100);color:var(--fg-disabled);border-color:transparent;cursor:not-allowed;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="lbl">Primary</div>
+    <button class="btn btn-primary">Gerar ticket</button>
+    <button class="btn btn-primary hov">Gerar ticket</button>
+    <button class="btn btn-primary foc">Gerar ticket</button>
+    <button class="btn btn-primary" disabled>Gerar ticket</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Secondary</div>
+    <button class="btn btn-secondary">Cancelar</button>
+    <button class="btn btn-secondary hov">Cancelar</button>
+    <button class="btn btn-secondary" disabled>Cancelar</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Ghost</div>
+    <button class="btn btn-ghost">Ver detalhes →</button>
+    <button class="btn btn-ghost hov">Ver detalhes →</button>
+  </div>
+  <div class="row">
+    <div class="lbl">Danger</div>
+    <button class="btn btn-danger">Deletar pesagem</button>
+  </div>
+</body></html>

@@ -17,7 +17,7 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
     nome: 'Cancela automática',
     descricao: 'Cancela automática com braço articulado',
     modelo: 'cancela',
-    placeholder: [0.65, 1.37, 0.65],
+    placeholder: [0.44, 1.45, 3.6],
     cor: '#e67e22',
   },
   'cancela-lado-a': {
@@ -25,7 +25,7 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
     nome: 'Cancela automática (Lado A)',
     descricao: 'Cancela automática - Lado A',
     modelo: 'cancela-lado-a',
-    placeholder: [0.65, 1.37, 4.24],
+    placeholder: [0.44, 1.45, 3.6],
     cor: '#e67e22',
   },
   'cancela-lado-b': {
@@ -33,7 +33,7 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
     nome: 'Cancela automática (Lado B)',
     descricao: 'Cancela automática - Lado B',
     modelo: 'cancela-lado-b',
-    placeholder: [0.65, 1.37, 4.24],
+    placeholder: [0.44, 1.45, 3.6],
     cor: '#d35400',
   },
   semaforo: {
@@ -54,8 +54,8 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
   },
   'camera-ip-baixo': {
     id: 'camera-ip-baixo',
-    nome: 'Câmera de reconhecimento de veículo',
-    descricao: 'Câmera voltada para baixo (veículo maior que a balança)',
+    nome: 'Câmera IP de Auditoria de Carga (Superior)',
+    descricao: 'Câmera voltada para baixo para auditoria e monitoração superior da carga do veículo',
     modelo: 'camera-ip-baixo',
     placeholder: [0.26, 0.2, 0.3],
     cor: '#3498db',
@@ -131,6 +131,15 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
     modelo: 'painel-automacao',
     placeholder: [0.68, 0.96, 0.29],
     cor: '#c0392b',
+  },
+  'painel-som': {
+    id: 'painel-som',
+    nome: 'Painel de som',
+    descricao: 'Painel de amplificação e distribuição de áudio',
+    // Mesmo modelo 3D do painel de automação (gabinete idêntico)
+    modelo: 'painel-automacao',
+    placeholder: [0.68, 0.96, 0.29],
+    cor: '#8e44ad',
   },
   cabine: {
     id: 'cabine',

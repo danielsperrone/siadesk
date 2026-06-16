@@ -18,6 +18,7 @@ export type PieceTypeId =
   | 'poste-1-5m'
   | 'display-mensagens'
   | 'painel-automacao'
+  | 'painel-som'
   | 'cabine'
   | 'caixa-de-som'
   | 'veiculo'
@@ -70,6 +71,8 @@ export interface ProjectConfig {
   comprimentoBalanca: number
   /** Largura da plataforma em metros */
   larguraBalanca: number
+  /** Tipo de instalação da balança: de sobrepor, semiembutida ou embutida */
+  tipoInstalacaoBalanca: 'sobrepor' | 'semiembutida' | 'embutida'
   // Novos Postes Cabeceira A
   siap01: boolean
   siap02: boolean
@@ -147,13 +150,35 @@ export interface ProjectConfig {
   displayMensagens: boolean
   caixaSom: boolean
   painelAutomacao: boolean
+  painelSom: boolean
   cabinePesagem: boolean
   lacosIndutivos: boolean
   /** Caminhão ilustrativo sobre a balança */
   mostrarVeiculo: boolean
   inverterLateralEntrada: boolean
   inverterLateralSaida: boolean
+  // Campos de controle de versão e auditoria
+  revisao: number
+  dataCriacao: string
+  dataAlteracao: string
+  offsetsArrasto?: Record<string, { dx: number, dy: number }>
+  rotacoes3D?: Record<string, number>
+  distanciaPainelAutomacao: number
+  distanciaQuadroDistribuicao: number
+  distanciaRoteadorPoE: number
+  /** Distância direta dos painéis centrais (SIAMAC/Som) até o Quadro de Distribuição (alimentação) */
+  distanciaPainelQuadro: number
+  /** Distância direta dos painéis centrais (SIAMAC/Som) até o Roteador POE (cabo de rede) */
+  distanciaPainelRoteador: number
+  equipamentosAdicionais: EquipamentoAdicional[]
 }
+
+export interface EquipamentoAdicional {
+  id: string
+  nome: string
+  quantidade: number
+}
+
 
 export interface CalibrationData {
   altura: number

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Badges & chips" subtitle="Status pills, filter chips" viewport="700x210" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:#fff;font-family:var(--font-sans);}
+  body{padding:24px 28px;display:flex;flex-direction:column;gap:14px;}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .lbl{font-family:var(--font-mono);font-size:10px;color:var(--fg-3);width:84px;flex-shrink:0;}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-family:var(--font-sans);font-weight:600;font-size:11px;line-height:1.4;letter-spacing:.01em;}
+  .dot{width:6px;height:6px;border-radius:50%;}
+  .b-success{background:var(--color-success-soft);color:var(--color-success-fg);}
+  .b-warning{background:var(--color-warning-soft);color:var(--color-warning-fg);}
+  .b-danger{background:var(--color-danger-soft);color:var(--color-danger-fg);}
+  .b-info{background:var(--color-info-soft);color:var(--color-info-fg);}
+  .b-neutral{background:var(--ink-75);color:var(--fg-2);}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--ink-100);border-radius:999px;font-family:var(--font-sans);font-weight:500;font-size:12px;color:var(--fg-2);background:#fff;}
+  .chip.active{background:var(--siamac-blue-700);border-color:var(--siamac-blue-700);color:#fff;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="lbl">Status</div>
+    <span class="badge b-success"><span class="dot" style="background:var(--color-success);"></span>Concluída</span>
+    <span class="badge b-info"><span class="dot" style="background:var(--color-info);"></span>Em pesagem</span>
+    <span class="badge b-warning"><span class="dot" style="background:var(--color-warning);"></span>Aguardando tara</span>
+    <span class="badge b-danger"><span class="dot" style="background:var(--color-danger);"></span>Fora da tolerância</span>
+    <span class="badge b-neutral">Cancelada</span>
+  </div>
+  <div class="row">
+    <div class="lbl">Chips</div>
+    <span class="chip active">Hoje</span>
+    <span class="chip">7 dias</span>
+    <span class="chip">30 dias</span>
+    <span class="chip">Personalizado</span>
+  </div>
+  <div class="row">
+    <div class="lbl">Filter</div>
+    <span class="chip">Carga ×</span>
+    <span class="chip">Cliente: COFCO ×</span>
+    <span class="chip">Balança 02 ×</span>
+  </div>
+</body></html>

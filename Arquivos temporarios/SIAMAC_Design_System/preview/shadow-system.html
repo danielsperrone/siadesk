@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Spacing" name="Elevation & shadows" subtitle="Soft, blue-tinted, restrained" viewport="700x180" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:var(--ink-50);font-family:var(--font-sans);}
+  body{padding:36px 28px;display:flex;gap:24px;justify-content:space-around;align-items:center;}
+  .card{width:120px;height:80px;background:#fff;border-radius:10px;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+  .label{font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--fg-1);}
+  .tok{font-family:var(--font-mono);font-size:9px;color:var(--fg-3);margin-top:3px;}
+</style></head>
+<body>
+  <div class="card" style="box-shadow:var(--shadow-1);"><div class="label">shadow-1</div><div class="tok">cards · rest</div></div>
+  <div class="card" style="box-shadow:var(--shadow-2);"><div class="label">shadow-2</div><div class="tok">cards · hover</div></div>
+  <div class="card" style="box-shadow:var(--shadow-3);"><div class="label">shadow-3</div><div class="tok">popovers</div></div>
+  <div class="card" style="box-shadow:var(--shadow-4);"><div class="label">shadow-4</div><div class="tok">dialogs</div></div>
+  <div class="card" style="box-shadow:var(--shadow-focus);border:1px solid var(--border-focus);"><div class="label">focus</div><div class="tok">3px navy 22%</div></div>
+</body></html>

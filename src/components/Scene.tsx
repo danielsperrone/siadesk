@@ -132,7 +132,7 @@ export function Scene({
 
       return lista
     }
-    return gerarLayout(config, calibracoes)
+    return gerarLayout({ ...config, comprimentoBalanca: 16 }, calibracoes)
   }, [config, abaAtiva, equipamentoCalibrando, calibracoes, calib])
 
   return (
@@ -153,7 +153,7 @@ export function Scene({
       />
       {abaAtiva !== 'calibracao' && (
         <Pista
-          comprimentoBalanca={config.comprimentoBalanca}
+          comprimentoBalanca={16}
           mostrarPista={mostrarPista}
           mostrarGrama={mostrarGrama}
         />

@@ -27,6 +27,9 @@ interface ProjectState {
   setEquipamentoCalibrando: (tipo: PieceTypeId) => void
   calibracoes: Record<string, CalibrationData>
   updateCalibracao: (tipo: PieceTypeId, key: keyof CalibrationData, value: number) => void
+  isDirty: boolean
+  setDirty: (dirty: boolean) => void
+  salvarConfig: () => ProjectConfig
 }
 
 export const CONFIG_PADRAO: ProjectConfig = {
@@ -36,6 +39,7 @@ export const CONFIG_PADRAO: ProjectConfig = {
   obra: '',
   comprimentoBalanca: 15,
   larguraBalanca: 3.2,
+  tipoInstalacaoBalanca: 'sobrepor',
   siap01: true,
   siap02: true,
   siap03: true,
@@ -100,7 +104,10 @@ export const CONFIG_PADRAO: ProjectConfig = {
   perifericosSiap08: [
     { id: 'emissor-siap08', tipo: 'sensor-emissor', altura: 0.75, rotacaoY: 90 }
   ],
-  perifericosSiap09: [],
+  perifericosSiap09: [
+    { id: 'camera-siap09-ampla', tipo: 'camera-ip', altura: 5.5, rotacaoY: 180 },
+    { id: 'camera-siap09-auditoria', tipo: 'camera-ip-baixo', altura: 5.8, rotacaoY: 180 }
+  ],
   cancelaEntrada: false,
   cancelaSaida: false,
   distanciaCancelaEntrada: 0.45,
@@ -120,11 +127,22 @@ export const CONFIG_PADRAO: ProjectConfig = {
   displayMensagens: false,
   caixaSom: false,
   painelAutomacao: false,
+  painelSom: false,
   cabinePesagem: false,
   lacosIndutivos: false,
   mostrarVeiculo: false,
   inverterLateralEntrada: false,
   inverterLateralSaida: false,
+  revisao: 0,
+  dataCriacao: '',
+  dataAlteracao: '',
+  distanciaPainelAutomacao: 15,
+  distanciaQuadroDistribuicao: 10,
+  distanciaRoteadorPoE: 20,
+  distanciaPainelQuadro: 5,
+  distanciaPainelRoteador: 5,
+  rotacoes3D: {},
+  equipamentosAdicionais: [],
 }
 
 export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
@@ -144,6 +162,7 @@ export const useProject = create<ProjectState>()(
   persist(
     (set) => ({
       config: CONFIG_PADRAO,
+      isDirty: false,
       setConfig: (key, value) =>
         set((state) => {
           const novaConfig = { ...state.config, [key]: value }
@@ -154,7 +173,12 @@ export const useProject = create<ProjectState>()(
             }
             return pr
           })
-          return { config: novaConfig, projetosRecentes: novosRecentes }
+          const isMeta = key === 'revisao' || key === 'dataAlteracao' || key === 'dataCriacao'
+          return {
+            config: novaConfig,
+            projetosRecentes: novosRecentes,
+            isDirty: isMeta ? state.isDirty : true
+          }
         }),
       abaAtiva: 'projeto',
       setAbaAtiva: (aba) => set({ abaAtiva: aba }),
@@ -163,32 +187,43 @@ export const useProject = create<ProjectState>()(
       projetosRecentes: [],
       criarNovoProjeto: (nomeProjeto, cliente, codigoProposta) =>
         set((state) => {
+          const dataCriacao = new Date().toLocaleDateString('pt-BR')
           const novaConfig: ProjectConfig = {
             ...CONFIG_PADRAO,
             nomeProjeto,
             cliente,
             codigoProposta,
             obra: '',
+            revisao: 0,
+            dataCriacao,
+            dataAlteracao: dataCriacao,
           }
           const novoProjeto: ProjetoRecente = {
             id: crypto.randomUUID(),
             nomeProjeto,
             cliente,
             codigoProposta,
-            dataCriacao: new Date().toLocaleDateString('pt-BR'),
+            dataCriacao,
             config: novaConfig,
           }
           return {
             config: novaConfig,
             projetoAtivo: true,
             abaAtiva: 'projeto',
+            isDirty: false,
             projetosRecentes: [novoProjeto, ...state.projetosRecentes.filter(p => p.nomeProjeto !== nomeProjeto || p.codigoProposta !== codigoProposta)],
           }
         }),
       abrirProjeto: (config) =>
         set((state) => {
-          // Garante que todas as propriedades novas do CONFIG_PADRAO estejam presentes
-          const configMesclada = { ...CONFIG_PADRAO, ...config }
+          const dataCriacao = config.dataCriacao || new Date().toLocaleDateString('pt-BR')
+          const configMesclada: ProjectConfig = {
+            ...CONFIG_PADRAO,
+            ...config,
+            revisao: config.revisao ?? 0,
+            dataCriacao: config.dataCriacao || dataCriacao,
+            dataAlteracao: config.dataAlteracao || config.dataCriacao || dataCriacao,
+          }
           // Adiciona ou joga para o topo da lista de recentes
           const id = state.projetosRecentes.find(p => p.nomeProjeto === configMesclada.nomeProjeto && p.codigoProposta === configMesclada.codigoProposta)?.id || crypto.randomUUID()
           const projetoExistente: ProjetoRecente = {
@@ -196,7 +231,7 @@ export const useProject = create<ProjectState>()(
             nomeProjeto: configMesclada.nomeProjeto,
             cliente: configMesclada.cliente,
             codigoProposta: configMesclada.codigoProposta,
-            dataCriacao: new Date().toLocaleDateString('pt-BR'),
+            dataCriacao: configMesclada.dataCriacao,
             config: configMesclada,
           }
           const listaFiltrada = state.projetosRecentes.filter(p => p.id !== id)
@@ -204,10 +239,11 @@ export const useProject = create<ProjectState>()(
             config: configMesclada,
             projetoAtivo: true,
             abaAtiva: 'projeto',
+            isDirty: false,
             projetosRecentes: [projetoExistente, ...listaFiltrada],
           }
         }),
-      fecharProjeto: () => set({ projetoAtivo: false, config: CONFIG_PADRAO }),
+      fecharProjeto: () => set({ projetoAtivo: false, config: CONFIG_PADRAO, isDirty: false }),
       excluirProjetoRecente: (id) =>
         set((state) => ({
           projetosRecentes: state.projetosRecentes.filter((p) => p.id !== id),
@@ -225,15 +261,46 @@ export const useProject = create<ProjectState>()(
             },
           },
         })),
+      setDirty: (dirty) => set({ isDirty: dirty }),
+      salvarConfig: () => {
+        let configAtualizada!: ProjectConfig
+        set((state) => {
+          const novaRevisao = (state.config.revisao ?? 0) + 1
+          const dataAlt = new Date().toLocaleDateString('pt-BR')
+          configAtualizada = {
+            ...state.config,
+            revisao: novaRevisao,
+            dataAlteracao: dataAlt
+          }
+          const novosRecentes = state.projetosRecentes.map((pr) => {
+            if (pr.nomeProjeto === state.config.nomeProjeto && pr.codigoProposta === state.config.codigoProposta) {
+              return {
+                ...pr,
+                nomeProjeto: configAtualizada.nomeProjeto,
+                cliente: configAtualizada.cliente,
+                codigoProposta: configAtualizada.codigoProposta,
+                config: configAtualizada
+              }
+            }
+            return pr
+          })
+          return {
+            config: configAtualizada,
+            projetosRecentes: novosRecentes,
+            isDirty: false
+          }
+        })
+        return configAtualizada
+      }
     }),
     {
       name: 'siadesk-storage',
-      // Persiste as calibrações, lista de projetos recentes, projeto ativo e configuração atual
       partialize: (state) => ({
         calibracoes: state.calibracoes,
         projetosRecentes: state.projetosRecentes,
         config: state.config,
         projetoAtivo: state.projetoAtivo,
+        isDirty: state.isDirty,
       }),
       merge: (persisted, atual) => {
         const p = persisted as Partial<ProjectState> | undefined
@@ -241,6 +308,10 @@ export const useProject = create<ProjectState>()(
           ...pr,
           config: {
             ...CONFIG_PADRAO,
+            revisao: pr.config?.revisao ?? 0,
+            dataCriacao: pr.config?.dataCriacao ?? '',
+            dataAlteracao: pr.config?.dataAlteracao ?? '',
+            equipamentosAdicionais: pr.config?.equipamentosAdicionais ?? [],
             ...(pr.config ?? {}),
           }
         }))
@@ -253,9 +324,14 @@ export const useProject = create<ProjectState>()(
           projetosRecentes: projetosRecentesMesclados,
           config: {
             ...CONFIG_PADRAO,
+            revisao: p?.config?.revisao ?? 0,
+            dataCriacao: p?.config?.dataCriacao ?? '',
+            dataAlteracao: p?.config?.dataAlteracao ?? '',
+            equipamentosAdicionais: p?.config?.equipamentosAdicionais ?? [],
             ...(p?.config ?? {}),
           },
           projetoAtivo: p?.projetoAtivo ?? false,
+          isDirty: p?.isDirty ?? false,
         }
       },
     },

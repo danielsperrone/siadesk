@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Stat cards" subtitle="KPI tiles with deltas" viewport="700x190" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:var(--ink-50);font-family:var(--font-sans);}
+  body{padding:24px 28px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .stat{background:#fff;border:1px solid var(--ink-75);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow-1);}
+  .ey{font-family:var(--font-display);font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);}
+  .v{font-family:var(--font-mono);font-weight:700;font-size:32px;color:var(--fg-1);margin-top:8px;line-height:1;font-variant-numeric:tabular-nums;}
+  .unit{font-family:var(--font-mono);font-weight:500;font-size:14px;color:var(--fg-3);margin-left:4px;}
+  .delta{margin-top:8px;font-family:var(--font-sans);font-weight:600;font-size:11px;display:inline-flex;gap:4px;align-items:center;}
+  .up{color:var(--color-success);}
+  .down{color:var(--color-danger);}
+</style></head>
+<body>
+  <div class="stat">
+    <div class="ey">Pesagens hoje</div>
+    <div class="v">142</div>
+    <div class="delta up">▲ 12% vs ontem</div>
+  </div>
+  <div class="stat">
+    <div class="ey">Peso líquido</div>
+    <div class="v">4.218<span class="unit">t</span></div>
+    <div class="delta up">▲ 8%</div>
+  </div>
+  <div class="stat">
+    <div class="ey">Balanças online</div>
+    <div class="v">3<span class="unit" style="font-size:18px;">/3</span></div>
+    <div class="delta" style="color:var(--fg-3);">Todas operando</div>
+  </div>
+  <div class="stat">
+    <div class="ey">Tolerância</div>
+    <div class="v" style="color:var(--color-danger);">2</div>
+    <div class="delta down">▼ excedidas hoje</div>
+  </div>
+</body></html>

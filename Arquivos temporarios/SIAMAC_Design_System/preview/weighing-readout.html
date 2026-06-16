@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Weighing readout" subtitle="Signature OWL dashboard tile" viewport="700x230" -->
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html,body{margin:0;padding:0;background:var(--ink-900);font-family:var(--font-sans);overflow:hidden;}
+  body{padding:28px 32px;color:#fff;}
+  .card{background:linear-gradient(180deg,#0F1620 0%,#080C12 100%);border:1px solid #1d2632;border-radius:14px;padding:22px 26px;position:relative;overflow:hidden;}
+  .bars{position:absolute;left:0;top:0;bottom:0;width:6px;display:flex;flex-direction:column;}
+  .bars span{flex:1;}
+  .ey{font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#88A4CB;}
+  .num{font-family:var(--font-mono);font-weight:700;font-size:88px;line-height:1;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums;margin-top:8px;}
+  .unit{font-family:var(--font-mono);font-weight:500;font-size:24px;color:#88A4CB;margin-left:8px;}
+  .meta{margin-top:14px;display:flex;gap:18px;font-family:var(--font-mono);font-size:11px;color:#88A4CB;}
+  .meta b{color:#fff;font-weight:600;}
+  .pulse{display:inline-flex;align-items:center;gap:6px;color:#27d04a;font-family:var(--font-display);font-weight:700;font-size:10px;letter-spacing:.14em;}
+  .pulse::before{content:"";width:8px;height:8px;border-radius:50%;background:#27d04a;box-shadow:0 0 8px #27d04a;}
+</style></head>
+<body>
+  <div class="card">
+    <div class="bars"><span style="background:#800000;"></span><span style="background:#018743;"></span><span style="background:#004788;"></span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-left:18px;">
+      <div class="ey">PESO BRUTO · BALANÇA 02</div>
+      <div class="pulse">ESTÁVEL</div>
+    </div>
+    <div style="padding-left:18px;">
+      <div class="num">32.480<span class="unit">kg</span></div>
+      <div class="meta">
+        <span>Ticket <b>#PSG-2026-04-1827</b></span>
+        <span>Tara <b>14.880 kg</b></span>
+        <span>Líquido <b>17.600 kg</b></span>
+      </div>
+    </div>
+  </div>
+</body></html>
