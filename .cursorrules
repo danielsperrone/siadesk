@@ -3,3 +3,4 @@
 - **Commit e Push Automático**: Sempre que você fizer alterações de código, arquivos ou modelos 3D neste repositório, você deve obrigatoriamente adicionar tudo, realizar o commit com uma mensagem descritiva (em português) e fazer o `git push origin main` para o repositório remoto ao término do seu turno de trabalho.
 - **Validação de Build**: Sempre execute `npm run build` antes de realizar o commit para garantir que o projeto não possui erros de compilação.
 - **Idioma**: Responda aos comandos e comente no código sempre em português do Brasil.
+- **Histórico de Configurações Alteradas**: Sempre que alterar um arquivo de configuração JSON (como os projetos de dimensionamento), salve também uma cópia na pasta `Jsons alterados/` com o nome formatado como: `DD-MM-YYYY_HHhMM_NOME_DO_CLIENTE.json`.

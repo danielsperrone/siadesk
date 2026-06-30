@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { Html, useGLTF } from '@react-three/drei'
 import { CATALOGO } from '../catalog/pieces'
 import type { PieceInstance } from '../types'
@@ -32,6 +32,9 @@ function Placeholder({ instancia, config }: { instancia: PieceInstance; config: 
 
 export function Piece({ instancia, modeloDisponivel, mostrarRotulos }: PieceProps) {
   const config = useProject((s) => s.config)
+  const abaAtiva = useProject((s) => s.abaAtiva)
+  const setPosteEditandoPerifericos = useProject((s) => s.setPosteEditandoPerifericos)
+
   const tipo = CATALOGO[instancia.tipo]
   const alturaRotulo = tipo.placeholder[1] + 0.6
   // Com âncora definida, o modelo é deslocado para que o ponto de ancoragem
@@ -43,8 +46,31 @@ export function Piece({ instancia, modeloDisponivel, mostrarRotulos }: PieceProp
   const escalaZ = instancia.tipo === 'balanca' ? config.larguraBalanca / 3.20 : 1
   const scale: [number, number, number] = [escalaX, 1, escalaZ]
 
+  const matchPoste = instancia.id.match(/^poste-(siap0[1-9])$/)
+  const isPosteClicavel = abaAtiva === 'postes' && !!matchPoste
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = 'auto'
+    }
+  }, [])
+
   return (
-    <group position={instancia.posicao} rotation={[0, instancia.rotacaoY, 0]}>
+    <group
+      position={instancia.posicao}
+      rotation={[0, instancia.rotacaoY, 0]}
+      onClick={isPosteClicavel && matchPoste ? (e) => {
+        e.stopPropagation()
+        setPosteEditandoPerifericos(matchPoste[1])
+      } : undefined}
+      onPointerOver={isPosteClicavel ? (e) => {
+        e.stopPropagation()
+        document.body.style.cursor = 'pointer'
+      } : undefined}
+      onPointerOut={isPosteClicavel ? () => {
+        document.body.style.cursor = 'auto'
+      } : undefined}
+    >
       <group position={[-ax, -ay, -az]}>
         {modeloDisponivel ? (
           <Suspense fallback={<Placeholder instancia={instancia} config={config} />}>

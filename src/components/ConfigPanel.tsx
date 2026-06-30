@@ -33,9 +33,18 @@ export function ConfigPanel() {
   const setConfig = useProject((s) => s.setConfig)
   
   const [posteEditandoDistancia, setPosteEditandoDistancia] = useState<string | null>(null)
-  const [posteEditandoPerifericos, setPosteEditandoPerifericos] = useState<string | null>(null)
+  const posteEditandoPerifericos = useProject((s) => s.posteEditandoPerifericos)
+  const setPosteEditandoPerifericos = useProject((s) => s.setPosteEditandoPerifericos)
   const [perifericoSelecionadoParaAdicionar, setPerifericoSelecionadoParaAdicionar] = useState<string>('camera-ip')
   const [modalAdicionaisAberto, setModalAdicionaisAberto] = useState(false)
+  const [menuMaisOpcoesAberto, setMenuMaisOpcoesAberto] = useState(false)
+  const [modalCopiarPerifericosAberto, setModalCopiarPerifericosAberto] = useState(false)
+
+  const fecharModalPerifericos = () => {
+    setPosteEditandoPerifericos(null)
+    setMenuMaisOpcoesAberto(false)
+    setModalCopiarPerifericosAberto(false)
+  }
   const [equipamentoAdicionalSelecionado, setEquipamentoAdicionalSelecionado] = useState(OPCOES_EQUIPAMENTOS_ADICIONAIS[0])
   const [quantidadeAdicional, setQuantidadeAdicional] = useState(1)
   
@@ -246,27 +255,39 @@ export function ConfigPanel() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <strong style={{ color: '#fff' }}>Cancela de Entrada</strong>
                         {config.cancelaEntrada && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (config.customCancelaEntrada) {
-                                setConfig('customCancelaEntrada', false)
-                                setPosteEditandoDistancia(null)
-                              } else {
-                                setConfig('customCancelaEntrada', true)
-                                setConfig('distanciaCancelaEntrada', 0.45)
-                                setConfig('afastamentoZCancelaEntrada', 0.6)
-                                setPosteEditandoDistancia('cancelaEntrada')
-                              }
-                            }}
-                            style={{ background: 'transparent', border: 'none', color: '#3b82f6', fontSize: '11px', cursor: 'pointer', fontWeight: '600', padding: 0 }}
-                          >
-                            {config.customCancelaEntrada ? 'Usar Padrão' : 'Alterar'}
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (config.customCancelaEntrada) {
+                                  setConfig('customCancelaEntrada', false)
+                                  setPosteEditandoDistancia(null)
+                                } else {
+                                  setConfig('customCancelaEntrada', true)
+                                  setConfig('distanciaCancelaEntrada', 0.67)
+                                  setConfig('afastamentoZCancelaEntrada', 0.6)
+                                  setPosteEditandoDistancia('cancelaEntrada')
+                                }
+                              }}
+                              style={{ background: 'transparent', border: 'none', color: '#3b82f6', fontSize: '11px', cursor: 'pointer', fontWeight: '600', padding: 0 }}
+                            >
+                              {config.customCancelaEntrada ? 'Usar Padrão' : 'Alterar'}
+                            </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacCancelaEntrada ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacCancelaEntrada', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
+                          </div>
                         )}
                       </div>
                       <span style={{ display: 'block', fontSize: '11px', color: '#8fa3b3', marginTop: '2px', lineHeight: '1.4' }}>
-                        Cancela automática na entrada. Afastada a {config.customCancelaEntrada ? config.distanciaCancelaEntrada : 0.45}m em X e {config.customCancelaEntrada ? config.afastamentoZCancelaEntrada : 0.6}m em Z.
+                        Cancela automática na entrada. Afastada a {config.customCancelaEntrada ? config.distanciaCancelaEntrada : 0.67}m em X e {config.customCancelaEntrada ? config.afastamentoZCancelaEntrada : 0.6}m em Z.
                       </span>
                     </div>
                   </label>
@@ -339,6 +360,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap01 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap01', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -416,6 +447,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap02 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap02', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -493,6 +534,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap03 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap03', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -570,6 +621,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap04 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap04', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -632,27 +693,39 @@ export function ConfigPanel() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <strong style={{ color: '#fff' }}>Cancela de Saída</strong>
                         {config.cancelaSaida && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (config.customCancelaSaida) {
-                                setConfig('customCancelaSaida', false)
-                                setPosteEditandoDistancia(null)
-                              } else {
-                                setConfig('customCancelaSaida', true)
-                                setConfig('distanciaCancelaSaida', 0.45)
-                                setConfig('afastamentoZCancelaSaida', 0.6)
-                                setPosteEditandoDistancia('cancelaSaida')
-                              }
-                            }}
-                            style={{ background: 'transparent', border: 'none', color: '#3b82f6', fontSize: '11px', cursor: 'pointer', fontWeight: '600', padding: 0 }}
-                          >
-                            {config.customCancelaSaida ? 'Usar Padrão' : 'Alterar'}
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (config.customCancelaSaida) {
+                                  setConfig('customCancelaSaida', false)
+                                  setPosteEditandoDistancia(null)
+                                } else {
+                                  setConfig('customCancelaSaida', true)
+                                  setConfig('distanciaCancelaSaida', 0.67)
+                                  setConfig('afastamentoZCancelaSaida', 0.6)
+                                  setPosteEditandoDistancia('cancelaSaida')
+                                }
+                              }}
+                              style={{ background: 'transparent', border: 'none', color: '#3b82f6', fontSize: '11px', cursor: 'pointer', fontWeight: '600', padding: 0 }}
+                            >
+                              {config.customCancelaSaida ? 'Usar Padrão' : 'Alterar'}
+                            </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacCancelaSaida ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacCancelaSaida', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
+                          </div>
                         )}
                       </div>
                       <span style={{ display: 'block', fontSize: '11px', color: '#8fa3b3', marginTop: '2px', lineHeight: '1.4' }}>
-                        Cancela automática na saída. Afastada a {config.customCancelaSaida ? config.distanciaCancelaSaida : 0.45}m em X e {config.customCancelaSaida ? config.afastamentoZCancelaSaida : 0.6}m em Z.
+                        Cancela automática na saída. Afastada a {config.customCancelaSaida ? config.distanciaCancelaSaida : 0.67}m em X e {config.customCancelaSaida ? config.afastamentoZCancelaSaida : 0.6}m em Z.
                       </span>
                     </div>
                   </label>
@@ -725,6 +798,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap05 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap05', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -802,6 +885,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap06 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap06', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -879,6 +972,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap07 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap07', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -956,6 +1059,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap08 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap08', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -1037,6 +1150,16 @@ export function ConfigPanel() {
                             >
                               Periféricos
                             </button>
+                            <span style={{ color: '#4b5563', fontSize: '11px' }}>|</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={config.fornecimentoSiamacSiap09 ?? true}
+                                onChange={(e) => setConfig('fornecimentoSiamacSiap09', e.target.checked)}
+                                style={{ margin: 0 }}
+                              />
+                              Siamac
+                            </label>
                           </div>
                         )}
                       </div>
@@ -1261,18 +1384,52 @@ export function ConfigPanel() {
         }
 
         const handleAdicionar = () => {
+          const rotPadrao = getRotacaoPadrao(perifericoSelecionadoParaAdicionar)
           const novo: PostePeriferico = {
             id: `${perifericoSelecionadoParaAdicionar}-${Date.now()}`,
             tipo: perifericoSelecionadoParaAdicionar as PieceTypeId,
             altura: getAlturaPadrao(perifericoSelecionadoParaAdicionar),
-            rotacaoY: getRotacaoPadrao(perifericoSelecionadoParaAdicionar),
+            rotacaoY: rotPadrao,
+            rotacaoYNormal: rotPadrao,
+            rotacaoYInvertido: rotPadrao,
+            fornecimentoSiamac: true,
           }
           const novaLista = [...lista, novo]
           setConfig(key, novaLista)
         }
 
-        const handleUpdatePeriferico = (id: string, campo: 'altura' | 'rotacaoY', valor: number) => {
-          const novaLista = lista.map((p) => (p.id === id ? { ...p, [campo]: valor } : p))
+        const handleUpdatePeriferico = <T extends keyof PostePeriferico>(id: string, campo: T, valor: PostePeriferico[T]) => {
+          const invertido = !!(
+            posteEditandoPerifericos && (
+              ['siap01', 'siap02', 'siap03', 'siap04'].includes(posteEditandoPerifericos)
+                ? config.inverterLateralEntrada
+                : ['siap05', 'siap06', 'siap07', 'siap08'].includes(posteEditandoPerifericos)
+                  ? config.inverterLateralSaida
+                  : false
+            )
+          )
+
+          const novaLista = lista.map((p) => {
+            if (p.id === id) {
+              const updated = { ...p, [campo]: valor }
+              if (campo === 'rotacaoY') {
+                const rotVal = valor as number
+                if (invertido) {
+                  updated.rotacaoYInvertido = rotVal
+                  if (updated.rotacaoYNormal === undefined) {
+                    updated.rotacaoYNormal = p.rotacaoY
+                  }
+                } else {
+                  updated.rotacaoYNormal = rotVal
+                  if (updated.rotacaoYInvertido === undefined) {
+                    updated.rotacaoYInvertido = p.rotacaoY
+                  }
+                }
+              }
+              return updated
+            }
+            return p
+          })
           setConfig(key, novaLista)
         }
 
@@ -1318,22 +1475,113 @@ export function ConfigPanel() {
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#fff' }}>
                   Periféricos do Poste {posteEditandoPerifericos.toUpperCase()}
                 </h3>
-                <button
-                  type="button"
-                  onClick={() => setPosteEditandoPerifericos(null)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#94a3b8',
-                    fontSize: '20px',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                  }}
-                >
-                  &times;
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+                  {/* Botão de 3 pontinhos */}
+                  <button
+                    type="button"
+                    onClick={() => setMenuMaisOpcoesAberto(!menuMaisOpcoesAberto)}
+                    style={{
+                      background: menuMaisOpcoesAberto ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                      border: 'none',
+                      color: '#94a3b8',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      lineHeight: 1,
+                    }}
+                    title="Mais opções"
+                  >
+                    &#8942;
+                  </button>
+
+                  {/* Dropdown de opções */}
+                  {menuMaisOpcoesAberto && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: '6px',
+                      background: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '6px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                      zIndex: 20000002,
+                      width: '180px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuMaisOpcoesAberto(false)
+                          setModalCopiarPerifericosAberto(true)
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#f8fafc',
+                          padding: '10px 12px',
+                          textAlign: 'left',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Copiar de outro poste
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuMaisOpcoesAberto(false)
+                          if (window.confirm(`Deseja realmente excluir todos os periféricos do poste ${posteEditandoPerifericos.toUpperCase()}?`)) {
+                            setConfig(key, [])
+                          }
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#ef4444',
+                          padding: '10px 12px',
+                          textAlign: 'left',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          borderTop: '1px solid #334155',
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        Excluir todos
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={fecharModalPerifericos}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#94a3b8',
+                      fontSize: '20px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    &times;
+                  </button>
+                </div>
               </div>
 
               {/* Add New Periphery */}
@@ -1430,20 +1678,33 @@ export function ConfigPanel() {
                         <span style={{ fontWeight: '600', fontSize: '13px', color: '#10b981' }}>
                           {CATALOGO[perif.tipo]?.nome || 'Equipamento'}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleExcluirPeriferico(perif.id)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#ef4444',
-                            fontSize: '11px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                          }}
-                        >
-                          Remover
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
+                            <input
+                              type="checkbox"
+                              checked={perif.fornecimentoSiamac ?? true}
+                              onChange={(e) => handleUpdatePeriferico(perif.id, 'fornecimentoSiamac', e.target.checked)}
+                              style={{ margin: 0 }}
+                            />
+                            Siamac
+                          </label>
+                          <span style={{ color: '#334155', fontSize: '11px' }}>|</span>
+                          <button
+                            type="button"
+                            onClick={() => handleExcluirPeriferico(perif.id)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#ef4444',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              fontWeight: '600',
+                              padding: 0,
+                            }}
+                          >
+                            Remover
+                          </button>
+                        </div>
                       </div>
 
                       {/* Altura Slider */}
@@ -1488,7 +1749,7 @@ export function ConfigPanel() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #334155', paddingTop: '16px', marginTop: '8px' }}>
                 <button
                   type="button"
-                  onClick={() => setPosteEditandoPerifericos(null)}
+                  onClick={fecharModalPerifericos}
                   style={{
                     padding: '8px 16px',
                     background: '#334155',
@@ -1501,6 +1762,197 @@ export function ConfigPanel() {
                   }}
                 >
                   Concluído
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Modal para Copiar Periféricos de Outro Poste */}
+      {modalCopiarPerifericosAberto && posteEditandoPerifericos && (() => {
+        const keyDestino = `perifericos${posteEditandoPerifericos.charAt(0).toUpperCase()}${posteEditandoPerifericos.slice(1)}` as keyof ProjectConfig
+        
+        // Listar todos os postes de SIAP01 a SIAP09, menos o atual que está sendo editado, que estão ativos
+        const postesPossiveis = [
+          { id: 'siap01', nome: 'SIAP01' },
+          { id: 'siap02', nome: 'SIAP02' },
+          { id: 'siap03', nome: 'SIAP03' },
+          { id: 'siap04', nome: 'SIAP04' },
+          { id: 'siap05', nome: 'SIAP05' },
+          { id: 'siap06', nome: 'SIAP06' },
+          { id: 'siap07', nome: 'SIAP07' },
+          { id: 'siap08', nome: 'SIAP08' },
+          { id: 'siap09', nome: 'SIAP09' },
+        ].filter(p => p.id !== posteEditandoPerifericos && config[p.id as keyof ProjectConfig])
+
+        const handleCopiarDe = (posteOrigemId: string) => {
+          const keyOrigem = `perifericos${posteOrigemId.charAt(0).toUpperCase()}${posteOrigemId.slice(1)}` as keyof ProjectConfig
+          const listaOrigem = (config[keyOrigem] || []) as PostePeriferico[]
+          
+          if (listaOrigem.length === 0) {
+            alert(`O poste ${posteOrigemId.toUpperCase()} não possui nenhum periférico instalado para ser copiado.`)
+            return
+          }
+
+          if (window.confirm(`Deseja copiar todos os ${listaOrigem.length} periféricos do poste ${posteOrigemId.toUpperCase()} para o poste ${posteEditandoPerifericos.toUpperCase()}? (Isso substituirá os periféricos atuais deste poste)`)) {
+            const novaLista = listaOrigem.map(p => ({
+              ...p,
+              // Novo ID único para evitar conflito de chaves no React
+              id: `${p.tipo}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+            }))
+            setConfig(keyDestino, novaLista)
+            setModalCopiarPerifericosAberto(false)
+          }
+        }
+
+        return (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            pointerEvents: 'auto',
+            zIndex: 30000000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+          }}>
+            <div style={{
+              background: 'rgba(30, 41, 59, 0.98)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '12px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+              padding: '24px',
+              width: '400px',
+              color: '#f8fafc',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              animation: 'slideUp 0.3s ease-out',
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#fff' }}>
+                  Copiar Periféricos para {posteEditandoPerifericos.toUpperCase()}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setModalCopiarPerifericosAberto(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#94a3b8',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                  }}
+                >
+                  &times;
+                </button>
+              </div>
+
+              {/* Lista de postes origens */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', lineHeight: '1.4' }}>
+                  Selecione o poste de origem para copiar os periféricos (incluindo alturas e giros):
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  maxHeight: '250px',
+                  overflowY: 'auto',
+                  paddingRight: '4px',
+                  marginTop: '8px',
+                }}>
+                  {postesPossiveis.length === 0 ? (
+                    <div style={{
+                      padding: '16px',
+                      textAlign: 'center',
+                      background: '#0f172a',
+                      border: '1px dashed #334155',
+                      borderRadius: '8px',
+                      color: '#64748b',
+                      fontSize: '13px',
+                    }}>
+                      Nenhum outro poste ativo no projeto para copiar.
+                    </div>
+                  ) : (
+                    postesPossiveis.map(p => {
+                      const keyOrigem = `perifericos${p.id.charAt(0).toUpperCase()}${p.id.slice(1)}` as keyof ProjectConfig
+                      const numPerifericos = ((config[keyOrigem] || []) as PostePeriferico[]).length
+                      
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleCopiarDe(p.id)}
+                          style={{
+                            background: '#0f172a',
+                            border: '1px solid #1e293b',
+                            borderRadius: '8px',
+                            padding: '12px 16px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            color: '#fff',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#10b981'
+                            e.currentTarget.style.background = '#1e293b'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#1e293b'
+                            e.currentTarget.style.background = '#0f172a'
+                          }}
+                        >
+                          <span style={{ fontWeight: '600', fontSize: '14px' }}>
+                            {p.nome}
+                          </span>
+                          <span style={{
+                            fontSize: '11px',
+                            background: numPerifericos > 0 ? '#10b981' : '#334155',
+                            color: '#fff',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontWeight: '600',
+                          }}>
+                            {numPerifericos} {numPerifericos === 1 ? 'periférico' : 'periféricos'}
+                          </span>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Botão de Cancelar */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #334155', paddingTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalCopiarPerifericosAberto(false)}
+                  style={{
+                    padding: '8px 16px',
+                    background: '#334155',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancelar
                 </button>
               </div>
             </div>

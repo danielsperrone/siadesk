@@ -80,7 +80,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
 
   // --- Cancelas de entrada e saída -------------------------------------------
   if (cfg.cancelaEntrada) {
-    const dist = cfg.customCancelaEntrada ? (cfg.distanciaCancelaEntrada ?? 0.45) : 0.45
+    const dist = cfg.customCancelaEntrada ? (cfg.distanciaCancelaEntrada ?? 0.67) : 0.67
     const afast = cfg.customCancelaEntrada ? (cfg.afastamentoZCancelaEntrada ?? 0.6) : 0.6
     const sinalZ = cfg.inverterLateralEntrada ? 1 : -1
     const rotY = cfg.inverterLateralEntrada ? 0 : Math.PI
@@ -95,7 +95,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
   }
 
   if (cfg.cancelaSaida) {
-    const dist = cfg.customCancelaSaida ? (cfg.distanciaCancelaSaida ?? 0.45) : 0.45
+    const dist = cfg.customCancelaSaida ? (cfg.distanciaCancelaSaida ?? 0.67) : 0.67
     const afast = cfg.customCancelaSaida ? (cfg.afastamentoZCancelaSaida ?? 0.6) : 0.6
     const sinalZ = cfg.inverterLateralSaida ? 1 : -1
     const rotY = cfg.inverterLateralSaida ? 0 : Math.PI
@@ -148,7 +148,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
     const dist = cfg.customSiap03 ? (cfg.distanciaSiap03 ?? 1.0) : 1.0
     const afast = cfg.customSiap03 ? (cfg.afastamentoZSiap03 ?? 0.6) : 0.6
     const xPoste = - (metadeComprimento + dist)
-    const sinalZ = cfg.inverterLateralEntrada ? 1 : -1
+    const sinalZ = cfg.inverterLateralEntrada ? -1 : 1
     const zPoste = sinalZ * (metadeLargura + afast)
     pecas.push({
       id: 'poste-siap03',
@@ -157,7 +157,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
       posicao: [xPoste, 0, zPoste],
       rotacaoY: 0,
     })
-    adicionarPerifericosPoste(pecas, 'siap03', xPoste, zPoste, cfg.perifericosSiap03 ?? [], calibracoes, cfg.inverterLateralEntrada)
+    adicionarPerifericosPoste(pecas, 'siap03', xPoste, zPoste, cfg.perifericosSiap03 ?? [], calibracoes, !cfg.inverterLateralEntrada)
   }
 
   // SIAP04: Poste de 1,5 metros (é aquele menorzinho), ele fica do outro lado da balança em relação ao SIAP03, mas na mesma cabeceira A, ele está a 0,6m deslocado do limite lateral da balança (da outra lateral)
@@ -165,7 +165,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
     const dist = cfg.customSiap04 ? (cfg.distanciaSiap04 ?? 0.0) : 0.0
     const afast = cfg.customSiap04 ? (cfg.afastamentoZSiap04 ?? 0.6) : 0.6
     const xPoste = - (metadeComprimento + dist)
-    const sinalZ = cfg.inverterLateralEntrada ? -1 : 1
+    const sinalZ = cfg.inverterLateralEntrada ? 1 : -1
     const zPoste = sinalZ * (metadeLargura + afast)
     pecas.push({
       id: 'poste-siap04',
@@ -174,7 +174,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
       posicao: [xPoste, 0, zPoste],
       rotacaoY: 0,
     })
-    adicionarPerifericosPoste(pecas, 'siap04', xPoste, zPoste, cfg.perifericosSiap04 ?? [], calibracoes, cfg.inverterLateralEntrada)
+    adicionarPerifericosPoste(pecas, 'siap04', xPoste, zPoste, cfg.perifericosSiap04 ?? [], calibracoes, !cfg.inverterLateralEntrada)
   }
 
   // SIAP05: Poste de 3 metros, fica na cabeceira B da balança, a 6,5m afastado (X positivo) e 0,6m deslocado do limite lateral (Z negativo)
@@ -216,7 +216,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
     const dist = cfg.customSiap07 ? (cfg.distanciaSiap07 ?? 1.0) : 1.0
     const afast = cfg.customSiap07 ? (cfg.afastamentoZSiap07 ?? 0.6) : 0.6
     const xPoste = metadeComprimento + dist
-    const sinalZ = cfg.inverterLateralSaida ? 1 : -1
+    const sinalZ = cfg.inverterLateralSaida ? -1 : 1
     const zPoste = sinalZ * (metadeLargura + afast)
     pecas.push({
       id: 'poste-siap07',
@@ -225,7 +225,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
       posicao: [xPoste, 0, zPoste],
       rotacaoY: 0,
     })
-    adicionarPerifericosPoste(pecas, 'siap07', xPoste, zPoste, cfg.perifericosSiap07 ?? [], calibracoes, cfg.inverterLateralSaida)
+    adicionarPerifericosPoste(pecas, 'siap07', xPoste, zPoste, cfg.perifericosSiap07 ?? [], calibracoes, !cfg.inverterLateralSaida)
   }
 
   // SIAP08: Poste de 1,5 metros (menorzinho), fica do outro lado da balança em relação ao SIAP07, na cabeceira B. Fica alinhado com o limite da cabeceira (X positivo) e 0,6m deslocado lateralmente (Z positivo)
@@ -233,7 +233,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
     const dist = cfg.customSiap08 ? (cfg.distanciaSiap08 ?? 0.0) : 0.0
     const afast = cfg.customSiap08 ? (cfg.afastamentoZSiap08 ?? 0.6) : 0.6
     const xPoste = metadeComprimento + dist
-    const sinalZ = cfg.inverterLateralSaida ? -1 : 1
+    const sinalZ = cfg.inverterLateralSaida ? 1 : -1
     const zPoste = sinalZ * (metadeLargura + afast)
     pecas.push({
       id: 'poste-siap08',
@@ -242,7 +242,7 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
       posicao: [xPoste, 0, zPoste],
       rotacaoY: 0,
     })
-    adicionarPerifericosPoste(pecas, 'siap08', xPoste, zPoste, cfg.perifericosSiap08 ?? [], calibracoes, cfg.inverterLateralSaida)
+    adicionarPerifericosPoste(pecas, 'siap08', xPoste, zPoste, cfg.perifericosSiap08 ?? [], calibracoes, !cfg.inverterLateralSaida)
   }
 
   // SIAP09: Poste de 6 metros, fica no meio da balança, a 0m de deslocamento em X (centro) e 0,6m deslocado do limite lateral (Z negativo)

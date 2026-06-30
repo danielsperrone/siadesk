@@ -29,6 +29,9 @@ export interface PostePeriferico {
   tipo: PieceTypeId
   altura: number
   rotacaoY: number // em graus, ex: -180 a 180
+  rotacaoYNormal?: number
+  rotacaoYInvertido?: number
+  fornecimentoSiamac?: boolean
 }
 
 export interface PieceType {
@@ -163,6 +166,8 @@ export interface ProjectConfig {
   dataAlteracao: string
   offsetsArrasto?: Record<string, { dx: number, dy: number }>
   rotacoes3D?: Record<string, number>
+  rotacoes3DNormal?: Record<string, number>
+  rotacoes3DInvertido?: Record<string, number>
   distanciaPainelAutomacao: number
   distanciaQuadroDistribuicao: number
   distanciaRoteadorPoE: number
@@ -171,6 +176,19 @@ export interface ProjectConfig {
   /** Distância direta dos painéis centrais (SIAMAC/Som) até o Roteador POE (cabo de rede) */
   distanciaPainelRoteador: number
   equipamentosAdicionais: EquipamentoAdicional[]
+  fornecimentoSiamacCancelaEntrada?: boolean
+  fornecimentoSiamacCancelaSaida?: boolean
+  fornecimentoSiamacSiap01?: boolean
+  fornecimentoSiamacSiap02?: boolean
+  fornecimentoSiamacSiap03?: boolean
+  fornecimentoSiamacSiap04?: boolean
+  fornecimentoSiamacSiap05?: boolean
+  fornecimentoSiamacSiap06?: boolean
+  fornecimentoSiamacSiap07?: boolean
+  fornecimentoSiamacSiap08?: boolean
+  fornecimentoSiamacSiap09?: boolean
+  fornecimentoSiamacPainelAutomacao?: boolean
+  fornecimentoSiamacPainelSom?: boolean
 }
 
 export interface EquipamentoAdicional {

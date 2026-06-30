@@ -43,6 +43,7 @@ export default function App() {
   const [novoNome, setNovoNome] = useState('')
   const [novoCliente, setNovoCliente] = useState('')
   const [novoCodigo, setNovoCodigo] = useState('')
+  const [usarTemplate, setUsarTemplate] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -60,7 +61,7 @@ export default function App() {
 
   // Estados para emissão do PDF
   const [gerandoPDF, setGerandoPDF] = useState(false)
-  const [pdfData, setPdfData] = useState<{ dataEmissao: Date; codigoDocumento: string; apenasChecklist?: boolean } | null>(null)
+  const [pdfData, setPdfData] = useState<{ dataEmissao: Date; codigoDocumento: string; tipoDocumento?: 'tecnico' | 'instalacao' | 'compra' | 'picklist' } | null>(null)
   const calibracoes = useProject((s) => s.calibracoes)
   const [dropdownAberto, setDropdownAberto] = useState(false)
 
@@ -71,11 +72,12 @@ export default function App() {
       alert('Por favor, preencha todos os campos para criar o projeto.')
       return
     }
-    criarNovoProjeto(novoNome, novoCliente, novoCodigo)
+    criarNovoProjeto(novoNome, novoCliente, novoCodigo, usarTemplate)
     // Limpa os campos do formulário
     setNovoNome('')
     setNovoCliente('')
     setNovoCodigo('')
+    setUsarTemplate(false)
   }
 
   const handleImportarJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -784,7 +786,930 @@ export default function App() {
     window.URL.revokeObjectURL(url)
   }
 
-  const iniciarFluxoPDF = (apenasChecklist: boolean = false) => {
+  const handleEmitirListaCompraXLSX = async () => {
+    console.log('Emitindo Lista de Compra. Equipamentos adicionais no estado:', config.equipamentosAdicionais)
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Lista de Compra')
+    
+    // Título Principal
+    worksheet.mergeCells('A1:G1')
+    const titleRow = worksheet.getRow(1)
+    titleRow.height = 40
+    const titleCell = worksheet.getCell('A1')
+    titleCell.value = 'SIAMAC OWL - LISTA DE COMPRA (SEPARAÇÃO E ESTOQUE)'
+    titleCell.font = { name: 'Segoe UI', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E3A8A' } // Azul Siamac
+    } as ExcelJS.Fill
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' }
+
+    // Subtítulo
+    const dataHoje = new Date().toLocaleDateString('pt-BR')
+    worksheet.mergeCells('A2:G2')
+    const subRow = worksheet.getRow(2)
+    subRow.height = 25
+    const subCell = worksheet.getCell('A2')
+    subCell.value = `Projeto: ${config.nomeProjeto || '-'}   |   Cliente: ${config.cliente || '-'}   |   Proposta/OS: ${config.codigoProposta || '-'}   |   Data: ${dataHoje}`
+    subCell.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FFE2E8F0' } }
+    subCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF172554' } // Azul mais escuro
+    } as ExcelJS.Fill
+    subCell.alignment = { vertical: 'middle', horizontal: 'center' }
+
+    // Linha em branco
+    worksheet.getRow(3).height = 15
+
+    // Cabeçalhos
+    const headers = [
+      'Item',
+      'Equipamento / Ponto',
+      'Descrição do Item a Fornecer',
+      'Quantidade',
+      'Tem em Estoque?',
+      'Comprar?',
+      'Observações / Ações Corretivas'
+    ]
+    const headerRow = worksheet.getRow(4)
+    headerRow.height = 28
+    headers.forEach((headerText, i) => {
+      const cell = headerRow.getCell(i + 1)
+      cell.value = headerText
+      cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF334155' }
+      } as ExcelJS.Fill
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF475569' } },
+        left: { style: 'thin', color: { argb: 'FF475569' } },
+        bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+        right: { style: 'thin', color: { argb: 'FF475569' } }
+      }
+    })
+
+    // Obter itens de compra agrupados
+    const obterItensCompra = () => {
+      const itensAgrupados: Record<string, { ponto: string; pergunta: string; quantidade: number }> = {}
+
+      const adicionarAoGrupo = (ponto: string, pergunta: string) => {
+        if (itensAgrupados[ponto]) {
+          itensAgrupados[ponto].quantidade += 1
+        } else {
+          itensAgrupados[ponto] = {
+            ponto,
+            pergunta,
+            quantidade: 1
+          }
+        }
+      }
+
+      // 1. Painéis Centrais (Sempre da SIAMAC)
+      if (config.painelAutomacao) {
+        adicionarAoGrupo('Painel SIAMAC (Automação)', 'Painel concentrador de cabos e comando de automação')
+      }
+      if (config.painelSom) {
+        adicionarAoGrupo('Painel de Som', 'Painel amplificador e reprodutor de áudio para pesagem')
+      }
+
+      // 2. Cancelas
+      let cancelasSiamac = 0
+      if (config.cancelaEntrada && config.fornecimentoSiamacCancelaEntrada !== false) {
+        cancelasSiamac++
+      }
+      if (config.cancelaSaida && config.fornecimentoSiamacCancelaSaida !== false) {
+        cancelasSiamac++
+      }
+      if (cancelasSiamac > 0) {
+        for (let i = 0; i < cancelasSiamac; i++) {
+          adicionarAoGrupo('Cancela Automática', 'Cancela automática e barreira de controle físico')
+        }
+      }
+
+      // 3. Postes e seus periféricos
+      const siapKeys = ['siap01', 'siap02', 'siap03', 'siap04', 'siap05', 'siap06', 'siap07', 'siap08', 'siap09']
+      siapKeys.forEach((key) => {
+        const siapNum = key.replace('siap', '')
+        const isPosteAtivo = config[key as keyof ProjectConfig] === true
+        const isPosteFornecido = config[`fornecimentoSiamacSiap${siapNum}` as keyof ProjectConfig] !== false
+
+        // Poste em si
+        if (isPosteAtivo && isPosteFornecido) {
+          const alturaPoste = siapNum === '04' || siapNum === '08' ? '1.5m' : (siapNum === '09' ? '6m' : '3m')
+          adicionarAoGrupo(`Poste SIAP (${alturaPoste})`, `Poste de sustentação metálico galvanizado de ${alturaPoste}`)
+        }
+
+        // Periféricos
+        if (isPosteAtivo) {
+          const perifKey = `perifericosSiap${siapNum}` as keyof ProjectConfig
+          const perifericos = config[perifKey] as PostePeriferico[] | undefined
+          if (perifericos && perifericos.length > 0) {
+            perifericos.forEach((perif) => {
+              if (perif.fornecimentoSiamac !== false) {
+                const tipoReal = perif.tipo === 'camera-ip-baixo' ? 'camera-ip' : perif.tipo
+                const nomePerif = CATALOGO[tipoReal]?.nome || 'Equipamento'
+                const descPerif = CATALOGO[tipoReal]?.descricao || 'Equipamento periférico'
+                adicionarAoGrupo(nomePerif, descPerif)
+              }
+            })
+          }
+        }
+      })
+
+      // 4. Equipamentos Adicionais
+      if (config.equipamentosAdicionais && config.equipamentosAdicionais.length > 0) {
+        config.equipamentosAdicionais.forEach((eq) => {
+          if (eq.quantidade > 0) {
+            const ponto = eq.nome
+            const pergunta = 'Equipamento / material adicional do projeto'
+            if (itensAgrupados[ponto]) {
+              itensAgrupados[ponto].quantidade += eq.quantidade
+            } else {
+              itensAgrupados[ponto] = {
+                ponto,
+                pergunta,
+                quantidade: eq.quantidade
+              }
+            }
+          }
+        })
+      }
+
+      return Object.values(itensAgrupados)
+    }
+
+    const itens = obterItensCompra()
+    let currentRowNum = 5
+
+    itens.forEach((item, idx) => {
+      const row = worksheet.getRow(currentRowNum)
+      row.height = 28
+      
+      const isEven = idx % 2 === 0
+      const defaultBg = isEven ? 'FFFFFFFF' : 'FFF8FAFC'
+      
+      const cellItem = row.getCell(1)
+      cellItem.value = idx + 1
+      cellItem.alignment = { vertical: 'middle', horizontal: 'center' }
+      
+      const cellPonto = row.getCell(2)
+      cellPonto.value = item.ponto
+      cellPonto.font = { name: 'Segoe UI', bold: true, size: 9.5 }
+      cellPonto.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+
+      const cellPergunta = row.getCell(3)
+      cellPergunta.value = item.pergunta
+      cellPergunta.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+
+      const cellQtd = row.getCell(4)
+      cellQtd.value = item.quantidade
+      cellQtd.font = { name: 'Segoe UI', bold: true, size: 9.5, color: { argb: 'FF1E3A8A' } }
+      cellQtd.alignment = { vertical: 'middle', horizontal: 'center' }
+
+      // Células de entrada (Tem em Estoque / Comprar / Obs)
+      const cellEst = row.getCell(5)
+      cellEst.value = ''
+      cellEst.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } } as ExcelJS.Fill
+      cellEst.alignment = { vertical: 'middle', horizontal: 'center' }
+
+      const cellCom = row.getCell(6)
+      cellCom.value = ''
+      cellCom.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } } as ExcelJS.Fill
+      cellCom.alignment = { vertical: 'middle', horizontal: 'center' }
+
+      const cellObs = row.getCell(7)
+      cellObs.value = ''
+      cellObs.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } } as ExcelJS.Fill
+      cellObs.alignment = { vertical: 'middle', horizontal: 'left' }
+
+      // Aplicar fontes e bordas a todas
+      for (let c = 1; c <= 7; c++) {
+        const cell = row.getCell(c)
+        if (c <= 4) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: defaultBg } } as ExcelJS.Fill
+        }
+        cell.font = { name: 'Segoe UI', size: 9.5, bold: c === 2 || c === 4 }
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        }
+      }
+
+      currentRowNum++
+    })
+
+    // Assinaturas
+    currentRowNum += 2
+    worksheet.mergeCells(`A${currentRowNum}:C${currentRowNum}`)
+    worksheet.mergeCells(`E${currentRowNum}:G${currentRowNum}`)
+    
+    worksheet.getCell(`A${currentRowNum}`).border = { bottom: { style: 'thin', color: { argb: 'FF334155' } } }
+    worksheet.getCell(`E${currentRowNum}`).border = { bottom: { style: 'thin', color: { argb: 'FF334155' } } }
+
+    currentRowNum++
+    const signLabelRow = worksheet.getRow(currentRowNum)
+    signLabelRow.height = 20
+    
+    worksheet.mergeCells(`A${currentRowNum}:C${currentRowNum}`)
+    worksheet.mergeCells(`E${currentRowNum}:G${currentRowNum}`)
+
+    worksheet.getCell(`A${currentRowNum}`).value = 'Responsável pelo Estoque (Almoxarifado)'
+    worksheet.getCell(`A${currentRowNum}`).font = { name: 'Segoe UI', size: 9, bold: true }
+    worksheet.getCell(`A${currentRowNum}`).alignment = { horizontal: 'center' }
+
+    worksheet.getCell(`E${currentRowNum}`).value = 'Responsável Suprimentos (Compras)'
+    worksheet.getCell(`E${currentRowNum}`).font = { name: 'Segoe UI', size: 9, bold: true }
+    worksheet.getCell(`E${currentRowNum}`).alignment = { horizontal: 'center' }
+
+    // Ajustar largura das colunas
+    worksheet.columns = [
+      { key: 'item', width: 6 },
+      { key: 'equipamento', width: 28 },
+      { key: 'descricao', width: 50 },
+      { key: 'quantidade', width: 14 },
+      { key: 'estoque', width: 18 },
+      { key: 'comprar', width: 18 },
+      { key: 'obs', width: 35 }
+    ]
+
+    // Salvar o arquivo
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    
+    const nomeProjetoSeguro = config.nomeProjeto.toLowerCase().replace(/\s+/g, '-') || 'projeto'
+    const codPropostaSeguro = config.codigoProposta.toLowerCase().replace(/\s+/g, '-') || 'proposta'
+    const filename = `lista-compra-${nomeProjetoSeguro}-${codPropostaSeguro}.xlsx`
+    
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    window.URL.revokeObjectURL(url)
+  }
+
+  const handleEmitirPicklistXLSX = async () => {
+    console.log('Emitindo Picklist de Carga. Equipamentos adicionais no estado:', config.equipamentosAdicionais)
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Picklist de Carga')
+    
+    // Título Principal
+    worksheet.mergeCells('A1:H1')
+    const titleRow = worksheet.getRow(1)
+    titleRow.height = 40
+    const titleCell = worksheet.getCell('A1')
+    titleCell.value = 'SIAMAC OWL - PICKLIST (CONFERÊNCIA DE CARGA)'
+    titleCell.font = { name: 'Segoe UI', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF16A34A' } // Verde Siamac Owl
+    } as ExcelJS.Fill
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' }
+
+    // Subtítulo
+    const dataHoje = new Date().toLocaleDateString('pt-BR')
+    worksheet.mergeCells('A2:H2')
+    const subRow = worksheet.getRow(2)
+    subRow.height = 25
+    const subCell = worksheet.getCell('A2')
+    subCell.value = `Projeto: ${config.nomeProjeto || '-'}   |   Cliente: ${config.cliente || '-'}   |   Proposta/OS: ${config.codigoProposta || '-'}   |   Data: ${dataHoje}`
+    subCell.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FFE2E8F0' } }
+    subCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF14532D' } // Verde mais escuro
+    } as ExcelJS.Fill
+    subCell.alignment = { vertical: 'middle', horizontal: 'center' }
+
+    // Linha em branco
+    worksheet.getRow(3).height = 15
+
+    // Cabeçalhos
+    const headers = [
+      'Item',
+      'Equipamento / Material',
+      'Descrição',
+      'Quantidade',
+      'Em Estoque?',
+      'Na Carga?',
+      'Caixa Nº / Embalagem',
+      'Observações'
+    ]
+    const headerRow = worksheet.getRow(4)
+    headerRow.height = 28
+    headers.forEach((headerText, i) => {
+      const cell = headerRow.getCell(i + 1)
+      cell.value = headerText
+      cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF334155' }
+      } as ExcelJS.Fill
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF475569' } },
+        left: { style: 'thin', color: { argb: 'FF475569' } },
+        bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+        right: { style: 'thin', color: { argb: 'FF475569' } }
+      }
+    })
+
+    // Obter itens agrupados do Picklist
+    const obterItensPicklist = () => {
+      const itensAgrupados: Record<string, { ponto: string; pergunta: string; quantidade: number }> = {}
+
+      const adicionarAoGrupo = (ponto: string, pergunta: string) => {
+        if (itensAgrupados[ponto]) {
+          itensAgrupados[ponto].quantidade += 1
+        } else {
+          itensAgrupados[ponto] = {
+            ponto,
+            pergunta,
+            quantidade: 1
+          }
+        }
+      }
+
+      // 1. Painéis Centrais (Sempre da SIAMAC)
+      if (config.painelAutomacao) {
+        adicionarAoGrupo('Painel SIAMAC (Automação)', 'Painel concentrador de cabos e comando de automação')
+      }
+      if (config.painelSom) {
+        adicionarAoGrupo('Painel de Som', 'Painel amplificador e reprodutor de áudio para pesagem')
+      }
+
+      // 2. Cancelas
+      let cancelasSiamac = 0
+      if (config.cancelaEntrada && config.fornecimentoSiamacCancelaEntrada !== false) {
+        cancelasSiamac++
+      }
+      if (config.cancelaSaida && config.fornecimentoSiamacCancelaSaida !== false) {
+        cancelasSiamac++
+      }
+      if (cancelasSiamac > 0) {
+        for (let i = 0; i < cancelasSiamac; i++) {
+          adicionarAoGrupo('Cancela Automática', 'Cancela automática e barreira de controle físico')
+        }
+      }
+
+      // 3. Postes e seus periféricos
+      const siapKeys = ['siap01', 'siap02', 'siap03', 'siap04', 'siap05', 'siap06', 'siap07', 'siap08', 'siap09']
+      siapKeys.forEach((key) => {
+        const siapNum = key.replace('siap', '')
+        const isPosteAtivo = config[key as keyof ProjectConfig] === true
+        const isPosteFornecido = config[`fornecimentoSiamacSiap${siapNum}` as keyof ProjectConfig] !== false
+
+        // Poste em si
+        if (isPosteAtivo && isPosteFornecido) {
+          const alturaPoste = siapNum === '04' || siapNum === '08' ? '1.5m' : (siapNum === '09' ? '6m' : '3m')
+          adicionarAoGrupo(`Poste SIAP (${alturaPoste})`, `Poste de sustentação metálico galvanizado de ${alturaPoste}`)
+        }
+
+        // Periféricos
+        if (isPosteAtivo) {
+          const perifKey = `perifericosSiap${siapNum}` as keyof ProjectConfig
+          const perifericos = config[perifKey] as PostePeriferico[] | undefined
+          if (perifericos && perifericos.length > 0) {
+            perifericos.forEach((perif) => {
+              if (perif.fornecimentoSiamac !== false) {
+                const tipoReal = perif.tipo === 'camera-ip-baixo' ? 'camera-ip' : perif.tipo
+                const nomePerif = CATALOGO[tipoReal]?.nome || 'Equipamento'
+                const descPerif = CATALOGO[tipoReal]?.descricao || 'Equipamento periférico'
+                adicionarAoGrupo(nomePerif, descPerif)
+              }
+            })
+          }
+        }
+      })
+
+      // 4. Equipamentos Adicionais
+      if (config.equipamentosAdicionais && config.equipamentosAdicionais.length > 0) {
+        config.equipamentosAdicionais.forEach((eq) => {
+          if (eq.quantidade > 0) {
+            const ponto = eq.nome
+            const pergunta = 'Equipamento / material adicional do projeto'
+            if (itensAgrupados[ponto]) {
+              itensAgrupados[ponto].quantidade += eq.quantidade
+            } else {
+              itensAgrupados[ponto] = {
+                ponto,
+                pergunta,
+                quantidade: eq.quantidade
+              }
+            }
+          }
+        })
+      }
+
+      return Object.values(itensAgrupados)
+    }
+
+    const itens = obterItensPicklist()
+    let currentRowNum = 5
+
+    itens.forEach((item, idx) => {
+      const row = worksheet.getRow(currentRowNum)
+      row.height = 28
+      
+      const isEven = idx % 2 === 0
+      const defaultBg = isEven ? 'FFFFFFFF' : 'FFF8FAFC'
+      
+      const cellItem = row.getCell(1)
+      cellItem.value = idx + 1
+      cellItem.alignment = { vertical: 'middle', horizontal: 'center' }
+      
+      const cellPonto = row.getCell(2)
+      cellPonto.value = item.ponto
+      cellPonto.font = { name: 'Segoe UI', bold: true, size: 9.5 }
+      cellPonto.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+
+      const cellPergunta = row.getCell(3)
+      cellPergunta.value = item.pergunta
+      cellPergunta.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+
+      const cellQtd = row.getCell(4)
+      cellQtd.value = item.quantidade
+      cellQtd.font = { name: 'Segoe UI', bold: true, size: 9.5, color: { argb: 'FF16A34A' } }
+      cellQtd.alignment = { vertical: 'middle', horizontal: 'center' }
+
+      // Células de entrada (Estoque / Carga / Caixa / Obs)
+      for (let c = 5; c <= 8; c++) {
+        const cell = row.getCell(c)
+        cell.value = ''
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } } as ExcelJS.Fill
+      }
+      row.getCell(8).alignment = { vertical: 'middle', horizontal: 'left' }
+      row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' }
+      row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' }
+      row.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' }
+
+      // Aplicar fontes e bordas a todas
+      for (let c = 1; c <= 8; c++) {
+        const cell = row.getCell(c)
+        if (c <= 4) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: defaultBg } } as ExcelJS.Fill
+        }
+        cell.font = { name: 'Segoe UI', size: 9.5, bold: c === 2 || c === 4 }
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        }
+      }
+
+      currentRowNum++
+    })
+
+    // Assinaturas
+    currentRowNum += 2
+    worksheet.mergeCells(`A${currentRowNum}:C${currentRowNum}`)
+    worksheet.mergeCells(`E${currentRowNum}:G${currentRowNum}`)
+    
+    worksheet.getCell(`A${currentRowNum}`).border = { bottom: { style: 'thin', color: { argb: 'FF334155' } } }
+    worksheet.getCell(`E${currentRowNum}`).border = { bottom: { style: 'thin', color: { argb: 'FF334155' } } }
+
+    currentRowNum++
+    const signLabelRow = worksheet.getRow(currentRowNum)
+    signLabelRow.height = 20
+    
+    worksheet.mergeCells(`A${currentRowNum}:C${currentRowNum}`)
+    worksheet.mergeCells(`E${currentRowNum}:G${currentRowNum}`)
+
+    worksheet.getCell(`A${currentRowNum}`).value = 'Responsável pela Separação (Conferência)'
+    worksheet.getCell(`A${currentRowNum}`).font = { name: 'Segoe UI', size: 9, bold: true }
+    worksheet.getCell(`A${currentRowNum}`).alignment = { horizontal: 'center' }
+
+    worksheet.getCell(`E${currentRowNum}`).value = 'Conferido por (Expedição / Motorista)'
+    worksheet.getCell(`E${currentRowNum}`).font = { name: 'Segoe UI', size: 9, bold: true }
+    worksheet.getCell(`E${currentRowNum}`).alignment = { horizontal: 'center' }
+
+    // Ajustar largura das colunas
+    worksheet.columns = [
+      { key: 'item', width: 6 },
+      { key: 'equipamento', width: 28 },
+      { key: 'descricao', width: 50 },
+      { key: 'quantidade', width: 14 },
+      { key: 'estoque', width: 16 },
+      { key: 'carga', width: 16 },
+      { key: 'caixa', width: 22 },
+      { key: 'obs', width: 30 }
+    ]
+
+
+    // ----------------------------------------------------
+    // ABA 2: CHECKLIST INTERNO DE TESTES
+    // ----------------------------------------------------
+    const obterInstanciasPeriferico = (tipo: string) => {
+      const instancias: Array<{ tipo: string; poste: string; altura: number }> = []
+      const siapKeys = ['siap01', 'siap02', 'siap03', 'siap04', 'siap05', 'siap06', 'siap07', 'siap08', 'siap09']
+      siapKeys.forEach((key) => {
+        const isPosteAtivo = config[key as keyof ProjectConfig] === true
+        if (!isPosteAtivo) return
+        const siapNum = (key as string).replace('siap', '')
+        const perifKey = `perifericosSiap${siapNum}` as keyof ProjectConfig
+        const perifericos = config[perifKey] as PostePeriferico[] | undefined
+        perifericos?.forEach((p) => {
+          if (p.tipo === tipo && p.fornecimentoSiamac !== false) {
+            instancias.push({
+              tipo: p.tipo,
+              poste: `SIAP${siapNum}`,
+              altura: p.altura
+            })
+          }
+        })
+      })
+      return instancias
+    }
+
+    const secoes = []
+
+    // 1. Painel SIAMAC
+    if (config.painelAutomacao) {
+      secoes.push({
+        titulo: 'Painel SIAMAC',
+        perguntas: [
+          { texto: 'Foi configurado o IP do CLP?', tipo: 'check' },
+          { texto: 'A fonte foi configurada para 220v?', tipo: 'check' },
+          { texto: 'O cabo de programação do CLP está presente dentro do painel?', tipo: 'check' },
+          { texto: 'A chave de ativação do modo manual está dentro do painel?', tipo: 'check' },
+          { texto: 'O painel está íntegro?', tipo: 'check' },
+          { texto: 'A senha do CLP foi colocada no Pipese?', tipo: 'check' },
+          { texto: 'Qual a senha do CLP?', tipo: 'texto' },
+          { texto: 'O CLP está com o módulo de expansão conectado?', tipo: 'check' },
+          { texto: 'Ao tentar abrir as cancelas, ele está chaveando os bornes de abrir da cancela A e B?', tipo: 'check' },
+          { texto: 'Ao tentar fechar as cancelas, ele está chaveando os bornes de abrir da cancela A e B?', tipo: 'check' },
+          { texto: 'Ao mudar o status dos semáforos no software, está chaveando os bornes correspondentes do painel?', tipo: 'check' },
+          { texto: 'Quando o sensor está alinhado a luz do painel do sensor acende (para todos sensores)?', tipo: 'check' },
+          { texto: 'Está saindo 24v nos pinos de saída de 24v?', tipo: 'check' },
+          { texto: 'O painel está com a proteção nos sinaleiros?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 2. Cancela Automática
+    const cancelas: string[] = []
+    if (config.cancelaEntrada && config.fornecimentoSiamacCancelaEntrada !== false) cancelas.push('Entrada')
+    if (config.cancelaSaida && config.fornecimentoSiamacCancelaSaida !== false) cancelas.push('Saída')
+
+    if (cancelas.length > 1) {
+      cancelas.forEach((cancela) => {
+        secoes.push({
+          titulo: `Para cancela automática (${cancela})`,
+          perguntas: [
+            { texto: `A cancela de ${cancela.toLowerCase()} encontra-se com todas as proteções da caixa?`, tipo: 'check' },
+            { texto: `Essa cancela de ${cancela.toLowerCase()} foi testada?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (cancelas.length === 1) {
+      secoes.push({
+        titulo: 'Para cancela automática',
+        perguntas: [
+          { texto: 'A cancela encontra-se com todas as proteções da caixa?', tipo: 'check' },
+          { texto: 'Essa cancela foi testada?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 3. Leitor Antena RFID
+    const rfids = obterInstanciasPeriferico('leitor-rfid')
+    if (rfids.length > 1) {
+      rfids.forEach((rfid) => {
+        secoes.push({
+          titulo: `Para Leitor Antena RFID (${rfid.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP da antena do ${rfid.poste}?`, tipo: 'check' },
+            { texto: `Foi configurado os parâmetros de leitura da antena do ${rfid.poste} conforme ensina em wiki.siamac.com.br?`, tipo: 'check' },
+            { texto: `A antena do ${rfid.poste} bipa e pisca uma luz continuamente ao passar a TAG pela frente?`, tipo: 'check' },
+            { texto: `É possível conectar a antena do ${rfid.poste} no OWL?`, tipo: 'check' },
+            { texto: `A antena do ${rfid.poste} está embalada e protegida para transporte?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (rfids.length === 1) {
+      secoes.push({
+        titulo: 'Para Leitor Antena RFID',
+        perguntas: [
+          { texto: 'Foi configurado o IP da antena?', tipo: 'check' },
+          { texto: 'Foi configurado os parâmetros de leitura da antena conforme ensina em wiki.siamac.com.br?', tipo: 'check' },
+          { texto: 'A antena bipa e pisca uma luz continuamente ao passar a TAG pela frente?', tipo: 'check' },
+          { texto: 'É possível conectar a antena no OWL?', tipo: 'check' },
+          { texto: 'A antena está embalada e protegida para transporte?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 4. Display de Mensagens
+    const displays = obterInstanciasPeriferico('display-mensagens')
+    if (displays.length > 1) {
+      displays.forEach((disp) => {
+        secoes.push({
+          titulo: `Para Display de Mensagens (${disp.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP do display do ${disp.poste}?`, tipo: 'check' },
+            { texto: `Ao desligar, aguardar 60 segundos e ligar, aparece a mensagem SIAMAC .::. www.siamac.com.br no display do ${disp.poste}?`, tipo: 'check' },
+            { texto: `Foi possível conectar o display do ${disp.poste} no OWL?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (displays.length === 1) {
+      secoes.push({
+        titulo: 'Para Display de Mensagens',
+        perguntas: [
+          { texto: 'Foi configurado o IP?', tipo: 'check' },
+          { texto: 'Ao desligar, aguardar 60 segundos e ligar, aparece a mensagem SIAMAC .::. www.siamac.com.br?', tipo: 'check' },
+          { texto: 'Foi possível conectar o display no OWL?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 5. Semáforo
+    const semaforos = obterInstanciasPeriferico('semaforo')
+    if (semaforos.length > 1) {
+      semaforos.forEach((sem) => {
+        secoes.push({
+          titulo: `Para o Semáforo (${sem.poste})`,
+          perguntas: [
+            { texto: `Foi feito o rabicho do conector do semáforo do ${sem.poste}?`, tipo: 'check' },
+            { texto: `Foi testado todos os leds direto no rabicho do semáforo do ${sem.poste} usando 24v?`, tipo: 'check' },
+            { texto: `O semáforo do ${sem.poste} está bem embalado para viagem?`, tipo: 'check' },
+            { texto: `O semáforo do ${sem.poste} está íntegro e sem defeitos?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (semaforos.length === 1) {
+      secoes.push({
+        titulo: 'Para o Semáforo',
+        perguntas: [
+          { texto: 'Foi feito o rabicho do conector?', tipo: 'check' },
+          { texto: 'Foi testado todos os leds direto no rabicho usando 24v?', tipo: 'check' },
+          { texto: 'Está bem embalado para viagem?', tipo: 'check' },
+          { texto: 'Está íntegro e sem defeitos?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 6. Caixas de Som
+    if (config.painelSom) {
+      secoes.push({
+        titulo: 'Para Caixas de som',
+        perguntas: [
+          { texto: 'Foi testado junto ao painel?', tipo: 'check' },
+          { texto: 'Está bem embalada?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 7. Câmeras OCR
+    const ocrs = obterInstanciasPeriferico('camera-ocr')
+    if (ocrs.length > 1) {
+      ocrs.forEach((ocr) => {
+        secoes.push({
+          titulo: `Para Câmeras OCR (${ocr.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP da câmera OCR do ${ocr.poste}?`, tipo: 'check' },
+            { texto: `Foi configurado o usuário e senha e foi adicionado no Pipese essa informação para o ${ocr.poste}?`, tipo: 'check' },
+            { texto: `Qual a senha da câmera OCR do ${ocr.poste}?`, tipo: 'texto' },
+            { texto: `Foi feito testes de leitura da câmera OCR do ${ocr.poste}?`, tipo: 'check' },
+            { texto: `Foi possível conectar a câmera OCR do ${ocr.poste} no OWL?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (ocrs.length === 1) {
+      secoes.push({
+        titulo: 'Para Câmeras OCR',
+        perguntas: [
+          { texto: 'Foi configurado o IP?', tipo: 'check' },
+          { texto: 'Foi configurado o usuário e senha e foi adicionado no Pipese essa informação?', tipo: 'check' },
+          { texto: 'Qual a senha da câmera OCR?', tipo: 'texto' },
+          { texto: 'Foi feito testes de leitura?', tipo: 'check' },
+          { texto: 'Foi possível conectar no OWL?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 8. Câmeras IP e Auditoria
+    const ips = obterInstanciasPeriferico('camera-ip')
+    const baixos = obterInstanciasPeriferico('camera-ip-baixo')
+    const todasIps = [...ips, ...baixos]
+
+    if (todasIps.length > 1) {
+      todasIps.forEach((cam) => {
+        const nomeCam = cam.tipo === 'camera-ip-baixo' ? 'Câmera IP Auditoria' : 'Câmera IP'
+        secoes.push({
+          titulo: `Para ${nomeCam} (${cam.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'check' },
+            { texto: `Foi configurado o usuário e senha da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'check' },
+            { texto: `Qual o usuário e senha da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'texto' },
+            { texto: `Foi adicionado o usuário e senha no Pipese da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'check' },
+            { texto: `Foi possível conectar a ${nomeCam.toLowerCase()} do ${cam.poste} no OWL?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (todasIps.length === 1) {
+      const cam = todasIps[0]
+      const nomeCam = cam.tipo === 'camera-ip-baixo' ? 'Câmera IP de Auditoria de Carga Superior' : 'Câmera IP'
+      secoes.push({
+        titulo: `Para ${nomeCam}`,
+        perguntas: [
+          { texto: 'Foi configurado o IP?', tipo: 'check' },
+          { texto: 'Foi configurado o usuário e senha?', tipo: 'check' },
+          { texto: 'Qual o usuário e senha?', tipo: 'texto' },
+          { texto: 'Foi adicionado o usuário e senha no Pipese?', tipo: 'check' },
+          { texto: 'Foi possível conectar no OWL?', tipo: 'check' }
+        ]
+      })
+    }
+
+    if (secoes.length > 0) {
+      const testWorksheet = workbook.addWorksheet('Testes Técnicos Internos')
+      
+      // Título da Aba de Testes
+      testWorksheet.mergeCells('A1:D1')
+      const testTitleRow = testWorksheet.getRow(1)
+      testTitleRow.height = 40
+      const testTitleCell = testWorksheet.getCell('A1')
+      testTitleCell.value = 'SIAMAC OWL - CHECKLIST INTERNO DE TESTES E CONFIGURAÇÕES'
+      testTitleCell.font = { name: 'Segoe UI', size: 13, bold: true, color: { argb: 'FFFFFFFF' } }
+      testTitleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E40AF' } // Azul escuro
+      } as ExcelJS.Fill
+      testTitleCell.alignment = { vertical: 'middle', horizontal: 'center' }
+
+      // Subtítulo
+      testWorksheet.mergeCells('A2:D2')
+      const testSubRow = testWorksheet.getRow(2)
+      testSubRow.height = 25
+      const testSubCell = testWorksheet.getCell('A2')
+      testSubCell.value = `Projeto: ${config.nomeProjeto || '-'}   |   Cliente: ${config.cliente || '-'}   |   Fábrica / Expedição`
+      testSubCell.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FFE2E8F0' } }
+      testSubCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E3A8A' }
+      } as ExcelJS.Fill
+      testSubCell.alignment = { vertical: 'middle', horizontal: 'center' }
+
+      // Linha em branco
+      testWorksheet.getRow(3).height = 15
+
+      // Cabeçalhos
+      const tHeaders = ['Categoria / Equipamento', 'Item de Verificação (Checklist)', 'Status (SIM / NÃO)', 'Valores / Informações Preenchidas']
+      const tHeaderRow = testWorksheet.getRow(4)
+      tHeaderRow.height = 28
+      tHeaders.forEach((text, i) => {
+        const cell = tHeaderRow.getCell(i + 1)
+        cell.value = text
+        cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF475569' }
+        } as ExcelJS.Fill
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF64748B' } },
+          left: { style: 'thin', color: { argb: 'FF64748B' } },
+          bottom: { style: 'medium', color: { argb: 'FF334155' } },
+          right: { style: 'thin', color: { argb: 'FF64748B' } }
+        }
+      })
+
+      let tRowNum = 5
+      secoes.forEach((secao) => {
+        // Cabeçalho da Seção no Testes
+        testWorksheet.mergeCells(`A${tRowNum}:D${tRowNum}`)
+        const secRow = testWorksheet.getRow(tRowNum)
+        secRow.height = 24
+        const secCell = secRow.getCell(1)
+        secCell.value = secao.titulo.toUpperCase()
+        secCell.font = { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: 'FF1E3A8A' } }
+        
+        for (let c = 1; c <= 4; c++) {
+          const cCell = secRow.getCell(c)
+          cCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0F2FE' } } as ExcelJS.Fill // Azul céu claro
+          cCell.border = {
+            top: { style: 'thin', color: { argb: 'FFBAE6FD' } },
+            left: { style: 'thin', color: { argb: 'FFBAE6FD' } },
+            bottom: { style: 'thin', color: { argb: 'FFBAE6FD' } },
+            right: { style: 'thin', color: { argb: 'FFBAE6FD' } }
+          }
+        }
+        secCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+        tRowNum++
+
+        secao.perguntas.forEach((perg, pIdx) => {
+          const row = testWorksheet.getRow(tRowNum)
+          row.height = 30
+          
+          const isEven = pIdx % 2 === 0
+          const defaultBg = isEven ? 'FFFFFFFF' : 'FFF8FAFC'
+
+          // Coluna 1: Categoria
+          const cellCat = row.getCell(1)
+          cellCat.value = secao.titulo
+          cellCat.font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF64748B' } }
+          cellCat.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+
+          // Coluna 2: Texto da pergunta
+          const cellText = row.getCell(2)
+          cellText.value = perg.texto
+          cellText.font = { name: 'Segoe UI', size: 9.5 }
+          cellText.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
+
+          // Coluna 3: Checkbox / Status
+          const cellStatus = row.getCell(3)
+          cellStatus.value = ''
+          if (perg.tipo === 'check') {
+            cellStatus.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } } as ExcelJS.Fill
+          }
+          cellStatus.alignment = { vertical: 'middle', horizontal: 'center' }
+
+          // Coluna 4: Campo de texto livre
+          const cellVal = row.getCell(4)
+          cellVal.value = ''
+          if (perg.tipo === 'texto') {
+            cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } } as ExcelJS.Fill
+          }
+          cellVal.alignment = { vertical: 'middle', horizontal: 'left' }
+
+          for (let c = 1; c <= 4; c++) {
+            const cell = row.getCell(c)
+            if (c <= 2 || (c === 3 && perg.tipo !== 'check') || (c === 4 && perg.tipo !== 'texto')) {
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: defaultBg } } as ExcelJS.Fill
+            }
+            cell.font = { name: 'Segoe UI', size: 9.5, bold: c === 1 }
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            }
+          }
+          tRowNum++
+        })
+      })
+
+      // Assinatura na aba de testes
+      tRowNum += 2
+      testWorksheet.mergeCells(`A${tRowNum}:B${tRowNum}`)
+      testWorksheet.mergeCells(`C${tRowNum}:D${tRowNum}`)
+      testWorksheet.getCell(`A${tRowNum}`).border = { bottom: { style: 'thin', color: { argb: 'FF334155' } } }
+      testWorksheet.getCell(`C${tRowNum}`).border = { bottom: { style: 'thin', color: { argb: 'FF334155' } } }
+
+      tRowNum++
+      testWorksheet.mergeCells(`A${tRowNum}:B${tRowNum}`)
+      testWorksheet.mergeCells(`C${tRowNum}:D${tRowNum}`)
+      testWorksheet.getCell(`A${tRowNum}`).value = 'Técnico de Configuração / Testes (SIAMAC)'
+      testWorksheet.getCell(`A${tRowNum}`).font = { name: 'Segoe UI', size: 9, bold: true }
+      testWorksheet.getCell(`A${tRowNum}`).alignment = { horizontal: 'center' }
+      
+      testWorksheet.getCell(`C${tRowNum}`).value = 'Responsável pela Expedição (Conferência Final)'
+      testWorksheet.getCell(`C${tRowNum}`).font = { name: 'Segoe UI', size: 9, bold: true }
+      testWorksheet.getCell(`C${tRowNum}`).alignment = { horizontal: 'center' }
+
+      testWorksheet.columns = [
+        { key: 'categoria', width: 25 },
+        { key: 'checklist', width: 68 },
+        { key: 'status', width: 18 },
+        { key: 'valores', width: 38 }
+      ]
+    }
+
+    // Salvar o arquivo
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    
+    const nomeProjetoSeguro = config.nomeProjeto.toLowerCase().replace(/\s+/g, '-') || 'projeto'
+    const codPropostaSeguro = config.codigoProposta.toLowerCase().replace(/\s+/g, '-') || 'proposta'
+    const filename = `picklist-carga-${nomeProjetoSeguro}-${codPropostaSeguro}.xlsx`
+    
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    window.URL.revokeObjectURL(url)
+  }
+
+  const iniciarFluxoPDF = (tipoDocumento: 'tecnico' | 'instalacao' | 'compra' | 'picklist' = 'tecnico') => {
     const agora = new Date()
     const dia = String(agora.getDate()).padStart(2, '0')
     const mes = String(agora.getMonth() + 1).padStart(2, '0')
@@ -799,7 +1724,7 @@ export default function App() {
     setPdfData({
       dataEmissao: agora,
       codigoDocumento: codigoDoc,
-      apenasChecklist
+      tipoDocumento
     })
     setGerandoPDF(true)
   }
@@ -812,11 +1737,43 @@ export default function App() {
       if (querSalvar) {
         handleSalvar()
         setTimeout(() => {
-          iniciarFluxoPDF(true)
+          iniciarFluxoPDF('instalacao')
         }, 800)
       }
     } else {
-      iniciarFluxoPDF(true)
+      iniciarFluxoPDF('instalacao')
+    }
+  }
+
+  const handleEmitirListaCompraPDF = () => {
+    if (isDirty) {
+      const querSalvar = window.confirm(
+        'Você possui alterações não salvas no projeto. Para emitir a Lista de Compra, o projeto precisa ser salvo antes.\n\nDeseja salvar as alterações agora?'
+      )
+      if (querSalvar) {
+        handleSalvar()
+        setTimeout(() => {
+          iniciarFluxoPDF('compra')
+        }, 800)
+      }
+    } else {
+      iniciarFluxoPDF('compra')
+    }
+  }
+
+  const handleEmitirPicklistPDF = () => {
+    if (isDirty) {
+      const querSalvar = window.confirm(
+        'Você possui alterações não salvas no projeto. Para emitir o Picklist, o projeto precisa ser salvo antes.\n\nDeseja salvar as alterações agora?'
+      )
+      if (querSalvar) {
+        handleSalvar()
+        setTimeout(() => {
+          iniciarFluxoPDF('picklist')
+        }, 800)
+      }
+    } else {
+      iniciarFluxoPDF('picklist')
     }
   }
 
@@ -844,7 +1801,7 @@ export default function App() {
         config={config}
         dataEmissao={pdfData.dataEmissao}
         codigoDocumento={pdfData.codigoDocumento}
-        apenasChecklist={pdfData.apenasChecklist}
+        tipoDocumento={pdfData.tipoDocumento}
         onFechar={() => {
           setGerandoPDF(false)
           setPdfData(null)
@@ -896,6 +1853,15 @@ export default function App() {
                   value={novoCodigo}
                   onChange={(e) => setNovoCodigo(e.target.value)}
                 />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', fontSize: '13px', color: '#94a3b8', margin: '4px 0 16px 0' }}>
+                <input
+                  type="checkbox"
+                  checked={usarTemplate}
+                  onChange={(e) => setUsarTemplate(e.target.checked)}
+                  style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
+                />
+                Utilizar template padrão (Balança Completa)
               </label>
               <button type="submit" className="btn-principal">
                 Criar Projeto
@@ -1034,6 +2000,18 @@ export default function App() {
                   </button>
                   <button onClick={() => { setDropdownAberto(false); handleEmitirChecklistXLSX(); }}>
                     📊 Checklist de Instalação (XLSX)
+                  </button>
+                  <button onClick={() => { setDropdownAberto(false); handleEmitirListaCompraPDF(); }}>
+                    📦 Lista de Compra (PDF)
+                  </button>
+                  <button onClick={() => { setDropdownAberto(false); handleEmitirListaCompraXLSX(); }}>
+                    📊 Lista de Compra (XLSX)
+                  </button>
+                  <button onClick={() => { setDropdownAberto(false); handleEmitirPicklistPDF(); }}>
+                    📋 Picklist de Carga (PDF)
+                  </button>
+                  <button onClick={() => { setDropdownAberto(false); handleEmitirPicklistXLSX(); }}>
+                    📊 Picklist de Carga (XLSX)
                   </button>
                 </div>
               </>

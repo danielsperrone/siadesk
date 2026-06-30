@@ -1,0 +1,299 @@
+{
+  "comprimentoBalanca": 30,
+  "larguraBalanca": 3.2,
+  "tipoInstalacaoBalanca": "semiembutida",
+  "siap01": true,
+  "siap02": true,
+  "siap03": true,
+  "siap04": true,
+  "siap05": true,
+  "siap06": true,
+  "siap07": true,
+  "siap08": true,
+  "siap09": true,
+  "distanciaSiap01": 5.5,
+  "distanciaSiap02": 1.5,
+  "distanciaSiap03": 1,
+  "distanciaSiap04": 0,
+  "distanciaSiap05": 6.5,
+  "distanciaSiap06": 3.5,
+  "distanciaSiap07": 1,
+  "distanciaSiap08": 0,
+  "distanciaSiap09": 0,
+  "afastamentoZSiap01": 0.6,
+  "afastamentoZSiap02": 0.6,
+  "afastamentoZSiap03": 0.6,
+  "afastamentoZSiap04": 0.6,
+  "afastamentoZSiap05": 0.6,
+  "afastamentoZSiap06": 0.6,
+  "afastamentoZSiap07": 0.6,
+  "afastamentoZSiap08": 0.6,
+  "afastamentoZSiap09": 0.6,
+  "customSiap01": false,
+  "customSiap02": false,
+  "customSiap03": false,
+  "customSiap04": false,
+  "customSiap05": false,
+  "customSiap06": true,
+  "customSiap07": true,
+  "customSiap08": true,
+  "customSiap09": false,
+  "perifericosSiap01": [
+    {
+      "id": "leitor-rfid-1781160840015",
+      "tipo": "leitor-rfid",
+      "altura": 2.5,
+      "rotacaoY": 160
+    }
+  ],
+  "perifericosSiap02": [
+    {
+      "id": "display-mensagens-1781160859358",
+      "tipo": "display-mensagens",
+      "altura": 2.75,
+      "rotacaoY": -90
+    },
+    {
+      "id": "caixa-de-som-1781160868366",
+      "tipo": "caixa-de-som",
+      "altura": 1.75,
+      "rotacaoY": 90
+    },
+    {
+      "id": "semaforo-1781160883195",
+      "tipo": "semaforo",
+      "altura": 2.1,
+      "rotacaoY": 20
+    },
+    {
+      "id": "semaforo-1781160896507",
+      "tipo": "semaforo",
+      "altura": 2.1,
+      "rotacaoY": 160
+    },
+    {
+      "id": "camera-ip-1781160912453",
+      "tipo": "camera-ip",
+      "altura": 1,
+      "rotacaoY": 0
+    },
+    {
+      "id": "camera-ocr-1781485833871",
+      "tipo": "camera-ocr",
+      "altura": 1.4,
+      "rotacaoY": -20
+    }
+  ],
+  "perifericosSiap03": [
+    {
+      "id": "sensor-receptor-1781485341047",
+      "tipo": "sensor-receptor",
+      "altura": 2.2,
+      "rotacaoY": -95
+    }
+  ],
+  "perifericosSiap04": [
+    {
+      "id": "sensor-emissor-1781485379661",
+      "tipo": "sensor-emissor",
+      "altura": 0.75,
+      "rotacaoY": 100
+    }
+  ],
+  "perifericosSiap05": [
+    {
+      "id": "leitor-rfid-1781488515181",
+      "tipo": "leitor-rfid",
+      "altura": 2.5,
+      "rotacaoY": -105
+    }
+  ],
+  "perifericosSiap06": [
+    {
+      "id": "semaforo-frente-siap06",
+      "tipo": "semaforo",
+      "altura": 2.1,
+      "rotacaoY": 35
+    },
+    {
+      "id": "semaforo-tras-siap06",
+      "tipo": "semaforo",
+      "altura": 2.1,
+      "rotacaoY": 140
+    },
+    {
+      "id": "display-mensagens-1781488405862",
+      "tipo": "display-mensagens",
+      "altura": 2.75,
+      "rotacaoY": 145
+    },
+    {
+      "id": "camera-ip-1781488409831",
+      "tipo": "camera-ip",
+      "altura": 1,
+      "rotacaoY": -135
+    },
+    {
+      "id": "camera-ocr-1781488413151",
+      "tipo": "camera-ocr",
+      "altura": 1.4,
+      "rotacaoY": 115
+    },
+    {
+      "id": "caixa-de-som-1781488417281",
+      "tipo": "caixa-de-som",
+      "altura": 1.75,
+      "rotacaoY": 40
+    }
+  ],
+  "perifericosSiap07": [
+    {
+      "id": "receptor-siap07",
+      "tipo": "sensor-receptor",
+      "altura": 2.2,
+      "rotacaoY": -125
+    }
+  ],
+  "perifericosSiap08": [
+    {
+      "id": "emissor-siap08",
+      "tipo": "sensor-emissor",
+      "altura": 0.75,
+      "rotacaoY": 55
+    }
+  ],
+  "perifericosSiap09": [
+    {
+      "id": "camera-ip-baixo-1781160679097",
+      "tipo": "camera-ip-baixo",
+      "altura": 5.6,
+      "rotacaoY": 90
+    },
+    {
+      "id": "camera-ip-baixo-1781160694142",
+      "tipo": "camera-ip-baixo",
+      "altura": 5.6,
+      "rotacaoY": 180
+    }
+  ],
+  "cancelaEntrada": true,
+  "cancelaSaida": true,
+  "distanciaCancelaEntrada": 0.475,
+  "afastamentoZCancelaEntrada": 0.6,
+  "customCancelaEntrada": false,
+  "distanciaCancelaSaida": 0.475,
+  "afastamentoZCancelaSaida": 0.6,
+  "customCancelaSaida": true,
+  "rfidEntrada": false,
+  "rfidSaida": false,
+  "posteCameraEntrada": false,
+  "posteCameraSaida": false,
+  "cameraOcrEntrada": false,
+  "cameraOcrSaida": false,
+  "sensoresBarreira": false,
+  "cameraVeiculoGrande": false,
+  "displayMensagens": false,
+  "caixaSom": false,
+  "painelAutomacao": true,
+  "painelSom": true,
+  "cabinePesagem": false,
+  "lacosIndutivos": false,
+  "mostrarVeiculo": false,
+  "inverterLateralEntrada": false,
+  "inverterLateralSaida": false,
+  "distanciaPainelAutomacao": 10,
+  "distanciaQuadroDistribuicao": 10,
+  "distanciaRoteadorPoE": 10,
+  "distanciaPainelQuadro": 5,
+  "distanciaPainelRoteador": 5,
+  "rotacoes3D": {
+    "cancela-entrada": -1.6468990595333977,
+    "cancela-saida": 1.5923005357936262,
+    "poste-siap03": 1.985239087123449,
+    "poste-siap04": -0.8365022959279512,
+    "poste-siap07": 1.7041821405229576
+  },
+  "equipamentosAdicionais": [
+    {
+      "id": "1781632094749-0.13727903796244656",
+      "nome": "TAG RFID Guarda Chuva",
+      "quantidade": 20
+    },
+    {
+      "id": "1781632103239-0.523504470296722",
+      "nome": "TAG RFID colável",
+      "quantidade": 20
+    }
+  ],
+  "fornecimentoSiamacCancelaEntrada": true,
+  "fornecimentoSiamacCancelaSaida": true,
+  "fornecimentoSiamacSiap01": false,
+  "fornecimentoSiamacSiap02": false,
+  "fornecimentoSiamacSiap03": false,
+  "fornecimentoSiamacSiap04": false,
+  "fornecimentoSiamacSiap05": false,
+  "fornecimentoSiamacSiap06": false,
+  "fornecimentoSiamacSiap07": false,
+  "fornecimentoSiamacSiap08": false,
+  "fornecimentoSiamacSiap09": false,
+  "fornecimentoSiamacPainelAutomacao": true,
+  "fornecimentoSiamacPainelSom": true,
+  "offsetsArrasto": {
+    "cota-x-poste-siap07-p3": {
+      "dx": -4,
+      "dy": 14
+    },
+    "cota-x-cancela-entrada-p3": {
+      "dx": 12,
+      "dy": -40
+    },
+    "cota-z-poste-siap04-p3": {
+      "dx": 62,
+      "dy": -11
+    },
+    "cota-x-poste-siap01-p3": {
+      "dx": 3,
+      "dy": -62
+    },
+    "cota-x-poste-siap02-p3": {
+      "dx": 5,
+      "dy": -42
+    },
+    "cota-x-poste-siap05-p3": {
+      "dx": 1,
+      "dy": -62
+    },
+    "cota-x-poste-siap06-p3": {
+      "dx": 0,
+      "dy": -40
+    },
+    "cota-x-cancela-saida-p3": {
+      "dx": -3,
+      "dy": -48
+    },
+    "cota-x-poste-siap03-p3": {
+      "dx": 0,
+      "dy": 14
+    },
+    "cota-z-poste-siap08-p3": {
+      "dx": -68,
+      "dy": -2
+    },
+    "poste-siap04-p4": {
+      "dx": 0,
+      "dy": -24
+    },
+    "poste-siap04-p4": {
+      "dx": 0,
+      "dy": -24
+    },
+    "cancela-entrada-p4": {
+      "dx": -36,
+      "dy": -37
+    },
+    "cancela-saida-p4": {
+      "dx": 33,
+      "dy": -15
+    }
+  }
+}

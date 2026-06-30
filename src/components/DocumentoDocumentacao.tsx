@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, Suspense, useRef } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
 import { useModelosDisponiveis } from '../hooks/useModelosDisponiveis'
 import { useProject } from '../store/project'
@@ -166,6 +166,7 @@ interface DocumentoDocumentacaoProps {
   onFechar: () => void
   onExportar: () => any
   apenasChecklist?: boolean
+  tipoDocumento?: 'tecnico' | 'instalacao' | 'compra' | 'picklist'
 }
 
 // Componente do Selo / Carimbo padrão da SIAMAC nas folhas técnicas
@@ -260,6 +261,35 @@ function PlaceholderDetalhe({ instancia }: { instancia: PieceInstance }) {
   )
 }
 
+function CanvasCapturer({ onCapture }: { onCapture: (dataUrl: string) => void }) {
+  const { gl, scene, camera } = useThree()
+  
+  useEffect(() => {
+    let handle: number
+    const timeoutId = setTimeout(() => {
+      let frames = 0
+      const checkFrame = () => {
+        if (frames < 3) {
+          frames++
+          gl.render(scene, camera)
+          handle = requestAnimationFrame(checkFrame)
+        } else {
+          const dataUrl = gl.domElement.toDataURL('image/png')
+          onCapture(dataUrl)
+        }
+      }
+      handle = requestAnimationFrame(checkFrame)
+    }, 500)
+    
+    return () => {
+      clearTimeout(timeoutId)
+      cancelAnimationFrame(handle)
+    }
+  }, [gl, scene, camera, onCapture])
+  
+  return null
+}
+
 interface PosteDetalheCanvasProps {
   tipoPeca: PieceTypeId
   altura: number
@@ -271,6 +301,7 @@ interface PosteDetalheCanvasProps {
   onRotationChange: (theta: number) => void
   distanciaCamera?: number
   bloquearRotacao?: boolean
+  onCapture?: (dataUrl: string) => void
 }
 
 const PosteDetalheCanvas: React.FC<PosteDetalheCanvasProps> = ({
@@ -283,7 +314,8 @@ const PosteDetalheCanvas: React.FC<PosteDetalheCanvasProps> = ({
   rotacaoInicial,
   onRotationChange,
   distanciaCamera,
-  bloquearRotacao
+  bloquearRotacao,
+  onCapture
 }) => {
   const controlsRef = useRef<any>(null)
 
@@ -381,6 +413,8 @@ const PosteDetalheCanvas: React.FC<PosteDetalheCanvasProps> = ({
         )
       })}
 
+      {onCapture && <CanvasCapturer onCapture={onCapture} />}
+
       {!bloquearRotacao && (
         <OrbitControls
           ref={controlsRef}
@@ -410,8 +444,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
   codigoDocumento,
   onFechar,
   onExportar,
-  apenasChecklist = false
+  apenasChecklist: apenasChecklistProp = false,
+  tipoDocumento
 }) => {
+  const tipoDoc = tipoDocumento ?? (apenasChecklistProp ? 'instalacao' : 'tecnico')
+  const apenasChecklist = tipoDoc !== 'tecnico'
   const calibracoes = useProject((s) => s.calibracoes)
   const setConfig = useProject((s) => s.setConfig)
   const modelosDisponiveis = useModelosDisponiveis()
@@ -423,6 +460,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
   // Estados para paginação na visualização do PDF
   const [paginaAtiva, setPaginaAtiva] = useState(1)
   const [isPrinting, setIsPrinting] = useState(false)
+
+  // Estados para captura sequencial de 3D antes de imprimir o PDF (previne limite de WebGL contexts e garante carregamento)
+  const [capturingPhase, setCapturingPhase] = useState<'idle' | 'capturing' | 'ready'>('idle')
+  const [currentCaptureIndex, setCurrentCaptureIndex] = useState(0)
+  const [capturedImages, setCapturedImages] = useState<Record<string, string>>({})
 
   // Estado para armazenar o deslocamento manual dos balões (dx, dy em pixels)
   const [offsetsArrasto, setOffsetsArrasto] = useState<Record<string, { dx: number, dy: number }>>(
@@ -454,19 +496,25 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
   }, [apenasChecklist])
 
   const handleSalvarPDF = () => {
-    setIsPrinting(true)
-    setTimeout(() => {
-      const promise = onExportar()
-      if (promise && typeof (promise as any).then === 'function') {
-        (promise as any).then(() => {
+    if (tipoDoc === 'tecnico') {
+      setCapturedImages({})
+      setCurrentCaptureIndex(0)
+      setCapturingPhase('capturing')
+    } else {
+      setIsPrinting(true)
+      setTimeout(() => {
+        const promise = onExportar()
+        if (promise && typeof (promise as any).then === 'function') {
+          (promise as any).then(() => {
+            setIsPrinting(false)
+          }).catch(() => {
+            setIsPrinting(false)
+          })
+        } else {
           setIsPrinting(false)
-        }).catch(() => {
-          setIsPrinting(false)
-        })
-      } else {
-        setIsPrinting(false)
-      }
-    }, 600)
+        }
+      }, 600)
+    }
   }
 
   const handleRedefinirBaloes = () => {
@@ -477,15 +525,58 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       setOffsetsArrasto({})
       setConfig('offsetsArrasto', {})
       setConfig('rotacoes3D', {})
+      setConfig('rotacoes3DNormal', {})
+      setConfig('rotacoes3DInvertido', {})
     }
   }
 
   const handleRotationChange = (id: string, theta: number) => {
+    let invertido = false
+    if (
+      id === 'cancela-entrada' ||
+      id.startsWith('poste-siap01') ||
+      id.startsWith('poste-siap02') ||
+      id.startsWith('poste-siap03') ||
+      id.startsWith('poste-siap04')
+    ) {
+      invertido = !!config.inverterLateralEntrada
+    } else if (
+      id === 'cancela-saida' ||
+      id.startsWith('poste-siap05') ||
+      id.startsWith('poste-siap06') ||
+      id.startsWith('poste-siap07') ||
+      id.startsWith('poste-siap08')
+    ) {
+      invertido = !!config.inverterLateralSaida
+    }
+
     const novasRotacoes = {
       ...(config.rotacoes3D || {}),
       [id]: theta
     }
+
+    const novasRotacoesNormal = {
+      ...(config.rotacoes3DNormal || {})
+    }
+    const novasRotacoesInvertido = {
+      ...(config.rotacoes3DInvertido || {})
+    }
+
+    if (invertido) {
+      novasRotacoesInvertido[id] = theta
+      if (novasRotacoesNormal[id] === undefined) {
+        novasRotacoesNormal[id] = config.rotacoes3D?.[id] ?? theta
+      }
+    } else {
+      novasRotacoesNormal[id] = theta
+      if (novasRotacoesInvertido[id] === undefined) {
+        novasRotacoesInvertido[id] = config.rotacoes3D?.[id] ?? theta
+      }
+    }
+
     setConfig('rotacoes3D', novasRotacoes)
+    setConfig('rotacoes3DNormal', novasRotacoesNormal)
+    setConfig('rotacoes3DInvertido', novasRotacoesInvertido)
   }
 
   const iniciarArrasto = (idBalao: string, pagina: number, e: React.MouseEvent) => {
@@ -738,7 +829,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       
       // O balão deve ficar sempre do mesmo lado da balança! (Z negativo é topo, Z positivo é base)
       const isTop = p.id === 'balanca' ? false : p.posicao[2] < 0
-      const vaiParaOTopo = p.id === 'poste-siap03' ? true : isTop
+      const vaiParaOTopo = isTop
       
       let labelX = px
       // Se for a cancela de entrada/saída, aplicamos um deslocamento lateral inicial para fora
@@ -923,7 +1014,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       const px = canvasWidth / 2 + p.posicao[0] * zoom
       const py = canvasHeight / 2 + p.posicao[2] * zoom
       const isTop = p.id === 'balanca' ? false : p.posicao[2] < 0
-      const vaiParaOTopo = p.id === 'poste-siap03' ? true : isTop
+      const vaiParaOTopo = isTop
       
       let labelX = px
       if (p.id === 'cancela-entrada') {
@@ -1467,11 +1558,142 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     }))
   }, [config])
 
+  const pagesToCapture = useMemo(() => {
+    const pages = ['p2', 'p3']
+    itensDetalhe.forEach(item => {
+      pages.push(`detail-${item.id}`)
+    })
+    pages.push('p4')
+    return pages
+  }, [itensDetalhe])
 
+  const handleCapture = (pageKey: string, dataUrl: string) => {
+    setCapturedImages(prev => ({ ...prev, [pageKey]: dataUrl }))
+    
+    setTimeout(() => {
+      setCurrentCaptureIndex(prevIndex => {
+        const nextIndex = prevIndex + 1
+        if (nextIndex >= pagesToCapture.length) {
+          // Captura finalizada! Configura fase para ready e ativa impressão
+          setCapturingPhase('ready')
+          setIsPrinting(true)
+          
+          // Aguarda renderização dos componentes com imagens estáticas e dispara PDF
+          setTimeout(() => {
+            const promise = onExportar()
+            if (promise && typeof (promise as any).then === 'function') {
+              (promise as any).then(() => {
+                setIsPrinting(false)
+                setCapturingPhase('idle')
+              }).catch(() => {
+                setIsPrinting(false)
+                setCapturingPhase('idle')
+              })
+            } else {
+              setIsPrinting(false)
+              setCapturingPhase('idle')
+            }
+          }, 800)
+          
+          return prevIndex
+        }
+        return nextIndex
+      })
+    }, 100)
+  }
 
   // --- Lógica para o Checklist de Comissionamento e Instalação Física ---
   const itensChecklist = useMemo(() => {
-    const lista: Array<{ ponto: string; pergunta: string }> = []
+    if (tipoDoc === 'picklist' || tipoDoc === 'compra') {
+      const itensAgrupados: Record<string, { ponto: string; pergunta: string; quantidade: number }> = {}
+
+      const adicionarAoGrupo = (ponto: string, pergunta: string) => {
+        if (itensAgrupados[ponto]) {
+          itensAgrupados[ponto].quantidade += 1
+        } else {
+          itensAgrupados[ponto] = {
+            ponto,
+            pergunta,
+            quantidade: 1
+          }
+        }
+      }
+
+      // 1. Painéis Centrais
+      if (config.painelAutomacao && config.fornecimentoSiamacPainelAutomacao !== false) {
+        adicionarAoGrupo('Painel SIAMAC (Automação)', 'Painel concentrador de cabos e comando de automação')
+      }
+      if (config.painelSom && config.fornecimentoSiamacPainelSom !== false) {
+        adicionarAoGrupo('Painel de Som', 'Painel amplificador e reprodutor de áudio para pesagem')
+      }
+
+      // 2. Cancelas
+      let cancelasSiamac = 0
+      if (config.cancelaEntrada && config.fornecimentoSiamacCancelaEntrada !== false) {
+        cancelasSiamac++
+      }
+      if (config.cancelaSaida && config.fornecimentoSiamacCancelaSaida !== false) {
+        cancelasSiamac++
+      }
+      if (cancelasSiamac > 0) {
+        for (let i = 0; i < cancelasSiamac; i++) {
+          adicionarAoGrupo('Cancela Automática', 'Cancela automática e barreira de controle físico')
+        }
+      }
+
+      // 3. Postes e seus periféricos
+      const siapKeys: Array<keyof ProjectConfig> = ['siap01', 'siap02', 'siap03', 'siap04', 'siap05', 'siap06', 'siap07', 'siap08', 'siap09']
+      siapKeys.forEach((key) => {
+        const siapNum = (key as string).replace('siap', '')
+        const isPosteAtivo = config[key] === true
+        const isPosteFornecido = config[`fornecimentoSiamacSiap${siapNum}` as keyof ProjectConfig] !== false
+
+        // Poste em si
+        if (isPosteAtivo && isPosteFornecido) {
+          const alturaPoste = siapNum === '04' || siapNum === '08' ? '1.5m' : (siapNum === '09' ? '6m' : '3m')
+          adicionarAoGrupo(`Poste SIAP (${alturaPoste})`, `Poste de sustentação metálico galvanizado de ${alturaPoste}`)
+        }
+
+        // Periféricos
+        if (isPosteAtivo) {
+          const perifKey = `perifericosSiap${siapNum}` as keyof ProjectConfig
+          const perifericos = config[perifKey] as PostePeriferico[] | undefined
+          if (perifericos && perifericos.length > 0) {
+            perifericos.forEach((perif) => {
+              if (perif.fornecimentoSiamac !== false) {
+                const tipoReal = perif.tipo === 'camera-ip-baixo' ? 'camera-ip' : perif.tipo
+                const nomePerif = CATALOGO[tipoReal]?.nome || 'Equipamento'
+                const descPerif = CATALOGO[tipoReal]?.descricao || 'Equipamento periférico'
+                adicionarAoGrupo(nomePerif, descPerif)
+              }
+            })
+          }
+        }
+      })
+
+      // 4. Equipamentos Adicionais
+      if (config.equipamentosAdicionais && config.equipamentosAdicionais.length > 0) {
+        config.equipamentosAdicionais.forEach((eq) => {
+          if (eq.quantidade > 0) {
+            const ponto = eq.nome
+            const pergunta = 'Equipamento / material adicional do projeto'
+            if (itensAgrupados[ponto]) {
+              itensAgrupados[ponto].quantidade += eq.quantidade
+            } else {
+              itensAgrupados[ponto] = {
+                ponto,
+                pergunta,
+                quantidade: eq.quantidade
+              }
+            }
+          }
+        })
+      }
+
+      return Object.values(itensAgrupados)
+    }
+
+    const lista: Array<{ ponto: string; pergunta: string; quantidade?: number }> = []
 
     // --- GRUPO 1: POSTES CIVIS E SEUS PERIFÉRICOS ---
     const siapKeys: Array<keyof ProjectConfig> = ['siap01', 'siap02', 'siap03', 'siap04', 'siap05', 'siap06', 'siap07', 'siap08', 'siap09']
@@ -1539,7 +1761,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               }
             } else if (perif.tipo === 'caixa-de-som') {
               lista.push(
-                { ponto: siapName, pergunta: 'Caixa de Som: A corneta de som está fixada no suporte do poste e direcionada para a pista?' },
+                { ponto: siapName, pergunta: 'Caixa de Som: A corneta de som está fixada no suporte do poste and direcionada para a pista?' },
                 { ponto: siapName, pergunta: 'Caixa de Som: Está conectada com cabo paralelo de som 2x2,5 mm² (cobre puro, não CCA) até o Painel de Som?' },
                 { ponto: siapName, pergunta: 'Caixa de Som: A comunicação e avisos por áudio foram testados e estão claros e audíveis?' }
               )
@@ -1600,7 +1822,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     )
 
     return lista
-  }, [config])
+  }, [config, tipoDoc])
 
   const paginasChecklist = useMemo(() => {
     if (itensChecklist.length === 0) return [[]]
@@ -1611,6 +1833,265 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     }
     return chunks
   }, [itensChecklist, apenasChecklist])
+
+  // --- Lógica para o Checklist Interno do Picklist ---
+  const itensChecklistInterno = useMemo(() => {
+    if (tipoDoc !== 'picklist') return []
+
+    const secoes = []
+
+    const obterInstanciasPeriferico = (tipo: string) => {
+      const instancias: Array<{ tipo: string; poste: string; altura: number }> = []
+      const siapKeys = ['siap01', 'siap02', 'siap03', 'siap04', 'siap05', 'siap06', 'siap07', 'siap08', 'siap09']
+      siapKeys.forEach((key) => {
+        const isPosteAtivo = config[key as keyof ProjectConfig] === true
+        if (!isPosteAtivo) return
+        const siapNum = (key as string).replace('siap', '')
+        const perifKey = `perifericosSiap${siapNum}` as keyof ProjectConfig
+        const perifericos = config[perifKey] as PostePeriferico[] | undefined
+        perifericos?.forEach((p) => {
+          if (p.tipo === tipo && p.fornecimentoSiamac !== false) {
+            instancias.push({
+              tipo: p.tipo,
+              poste: `SIAP${siapNum}`,
+              altura: p.altura
+            })
+          }
+        })
+      })
+      return instancias
+    }
+
+    // 1. Painel SIAMAC
+    if (config.painelAutomacao) {
+      secoes.push({
+        titulo: 'Painel SIAMAC',
+        perguntas: [
+          { texto: 'Foi configurado o IP do CLP?', tipo: 'check' },
+          { texto: 'A fonte foi configurada para 220v?', tipo: 'check' },
+          { texto: 'O cabo de programação do CLP está presente dentro do painel?', tipo: 'check' },
+          { texto: 'A chave de ativação do modo manual está dentro do painel?', tipo: 'check' },
+          { texto: 'O painel está íntegro?', tipo: 'check' },
+          { texto: 'A senha do CLP foi colocada no Pipese?', tipo: 'check' },
+          { texto: 'Qual a senha do CLP?', tipo: 'texto' },
+          { texto: 'O CLP está com o módulo de expansão conectado?', tipo: 'check' },
+          { texto: 'Ao tentar abrir as cancelas, ele está chaveando os bornes de abrir da cancela A e B?', tipo: 'check' },
+          { texto: 'Ao tentar fechar as cancelas, ele está chaveando os bornes de abrir da cancela A e B?', tipo: 'check' },
+          { texto: 'Ao mudar o status dos semáforos no software, está chaveando os bornes correspondentes do painel?', tipo: 'check' },
+          { texto: 'Quando o sensor está alinhado a luz do painel do sensor acende (para todos sensores)?', tipo: 'check' },
+          { texto: 'Está saindo 24v nos pinos de saída de 24v?', tipo: 'check' },
+          { texto: 'O painel está com a proteção nos sinaleiros?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 2. Cancela Automática
+    const cancelas: string[] = []
+    if (config.cancelaEntrada && config.fornecimentoSiamacCancelaEntrada !== false) cancelas.push('Entrada')
+    if (config.cancelaSaida && config.fornecimentoSiamacCancelaSaida !== false) cancelas.push('Saída')
+
+    if (cancelas.length > 1) {
+      cancelas.forEach((cancela) => {
+        secoes.push({
+          titulo: `Para cancela automática (${cancela})`,
+          perguntas: [
+            { texto: `A cancela de ${cancela.toLowerCase()} encontra-se com todas as proteções da caixa?`, tipo: 'check' },
+            { texto: `Essa cancela de ${cancela.toLowerCase()} foi testada?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (cancelas.length === 1) {
+      secoes.push({
+        titulo: 'Para cancela automática',
+        perguntas: [
+          { texto: 'A cancela encontra-se com todas as proteções da caixa?', tipo: 'check' },
+          { texto: 'Essa cancela foi testada?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 3. Leitor Antena RFID
+    const rfids = obterInstanciasPeriferico('leitor-rfid')
+    if (rfids.length > 1) {
+      rfids.forEach((rfid) => {
+        secoes.push({
+          titulo: `Para Leitor Antena RFID (${rfid.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP da antena do ${rfid.poste}?`, tipo: 'check' },
+            { texto: `Foi configurado os parâmetros de leitura da antena do ${rfid.poste} conforme ensina em wiki.siamac.com.br?`, tipo: 'check' },
+            { texto: `A antena do ${rfid.poste} bipa e pisca uma luz continuamente ao passar a TAG pela frente?`, tipo: 'check' },
+            { texto: `É possível conectar a antena do ${rfid.poste} no OWL?`, tipo: 'check' },
+            { texto: `A antena do ${rfid.poste} está embalada e protegida para transporte?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (rfids.length === 1) {
+      secoes.push({
+        titulo: 'Para Leitor Antena RFID',
+        perguntas: [
+          { texto: 'Foi configurado o IP da antena?', tipo: 'check' },
+          { texto: 'Foi configurado os parâmetros de leitura da antena conforme ensina em wiki.siamac.com.br?', tipo: 'check' },
+          { texto: 'A antena bipa e pisca uma luz continuamente ao passar a TAG pela frente?', tipo: 'check' },
+          { texto: 'É possível conectar a antena no OWL?', tipo: 'check' },
+          { texto: 'A antena está embalada e protegida para transporte?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 4. Display de Mensagens
+    const displays = obterInstanciasPeriferico('display-mensagens')
+    if (displays.length > 1) {
+      displays.forEach((disp) => {
+        secoes.push({
+          titulo: `Para Display de Mensagens (${disp.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP do display do ${disp.poste}?`, tipo: 'check' },
+            { texto: `Ao desligar, aguardar 60 segundos e ligar, aparece a mensagem SIAMAC .::. www.siamac.com.br no display do ${disp.poste}?`, tipo: 'check' },
+            { texto: `Foi possível conectar o display do ${disp.poste} no OWL?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (displays.length === 1) {
+      secoes.push({
+        titulo: 'Para Display de Mensagens',
+        perguntas: [
+          { texto: 'Foi configurado o IP?', tipo: 'check' },
+          { texto: 'Ao desligar, aguardar 60 segundos e ligar, aparece a mensagem SIAMAC .::. www.siamac.com.br?', tipo: 'check' },
+          { texto: 'Foi possível conectar o display no OWL?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 5. Semáforo
+    const semaforos = obterInstanciasPeriferico('semaforo')
+    if (semaforos.length > 1) {
+      semaforos.forEach((sem) => {
+        secoes.push({
+          titulo: `Para o Semáforo (${sem.poste})`,
+          perguntas: [
+            { texto: `Foi feito o rabicho do conector do semáforo do ${sem.poste}?`, tipo: 'check' },
+            { texto: `Foi testado todos os leds direto no rabicho do semáforo do ${sem.poste} usando 24v?`, tipo: 'check' },
+            { texto: `O semáforo do ${sem.poste} está bem embalado para viagem?`, tipo: 'check' },
+            { texto: `O semáforo do ${sem.poste} está íntegro e sem defeitos?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (semaforos.length === 1) {
+      secoes.push({
+        titulo: 'Para o Semáforo',
+        perguntas: [
+          { texto: 'Foi feito o rabicho do conector?', tipo: 'check' },
+          { texto: 'Foi testado todos os leds direto no rabicho usando 24v?', tipo: 'check' },
+          { texto: 'Está bem embalado para viagem?', tipo: 'check' },
+          { texto: 'Está íntegro e sem defeitos?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 6. Caixas de Som
+    if (config.painelSom) {
+      secoes.push({
+        titulo: 'Para Caixas de som',
+        perguntas: [
+          { texto: 'Foi testado junto ao painel?', tipo: 'check' },
+          { texto: 'Está bem embalada?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 7. Câmeras OCR
+    const ocrs = obterInstanciasPeriferico('camera-ocr')
+    if (ocrs.length > 1) {
+      ocrs.forEach((ocr) => {
+        secoes.push({
+          titulo: `Para Câmeras OCR (${ocr.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP da câmera OCR do ${ocr.poste}?`, tipo: 'check' },
+            { texto: `Foi configurado o usuário e senha e foi adicionado no Pipese essa informação para o ${ocr.poste}?`, tipo: 'check' },
+            { texto: `Qual a senha da câmera OCR do ${ocr.poste}?`, tipo: 'texto' },
+            { texto: `Foi feito testes de leitura da câmera OCR do ${ocr.poste}?`, tipo: 'check' },
+            { texto: `Foi possível conectar a câmera OCR do ${ocr.poste} no OWL?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (ocrs.length === 1) {
+      secoes.push({
+        titulo: 'Para Câmeras OCR',
+        perguntas: [
+          { texto: 'Foi configurado o IP?', tipo: 'check' },
+          { texto: 'Foi configurado o usuário e senha e foi adicionado no Pipese essa informação?', tipo: 'check' },
+          { texto: 'Qual a senha da câmera OCR?', tipo: 'texto' },
+          { texto: 'Foi feito testes de leitura?', tipo: 'check' },
+          { texto: 'Foi possível conectar no OWL?', tipo: 'check' }
+        ]
+      })
+    }
+
+    // 8. Câmeras IP e Auditoria
+    const ips = obterInstanciasPeriferico('camera-ip')
+    const baixos = obterInstanciasPeriferico('camera-ip-baixo')
+    const todasIps = [...ips, ...baixos]
+
+    if (todasIps.length > 1) {
+      todasIps.forEach((cam) => {
+        const nomeCam = cam.tipo === 'camera-ip-baixo' ? 'Câmera IP Auditoria' : 'Câmera IP'
+        secoes.push({
+          titulo: `Para ${nomeCam} (${cam.poste})`,
+          perguntas: [
+            { texto: `Foi configurado o IP da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'check' },
+            { texto: `Foi configurado o usuário e senha da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'check' },
+            { texto: `Qual o usuário e senha da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'texto' },
+            { texto: `Foi adicionado o usuário e senha no Pipese da ${nomeCam.toLowerCase()} do ${cam.poste}?`, tipo: 'check' },
+            { texto: `Foi possível conectar a ${nomeCam.toLowerCase()} do ${cam.poste} no OWL?`, tipo: 'check' }
+          ]
+        })
+      })
+    } else if (todasIps.length === 1) {
+      const cam = todasIps[0]
+      const nomeCam = cam.tipo === 'camera-ip-baixo' ? 'Câmera IP de Auditoria de Carga Superior' : 'Câmera IP'
+      secoes.push({
+        titulo: `Para ${nomeCam}`,
+        perguntas: [
+          { texto: 'Foi configurado o IP?', tipo: 'check' },
+          { texto: 'Foi configurado o usuário e senha?', tipo: 'check' },
+          { texto: 'Qual o usuário e senha?', tipo: 'texto' },
+          { texto: 'Foi adicionado o usuário e senha no Pipese?', tipo: 'check' },
+          { texto: 'Foi possível conectar no OWL?', tipo: 'check' }
+        ]
+      })
+    }
+
+    return secoes
+  }, [config, tipoDoc])
+
+  const paginasChecklistInternoA4 = useMemo(() => {
+    if (itensChecklistInterno.length === 0) return []
+    const chunks: Array<Array<{ secao: string; texto: string; tipo: 'check' | 'texto' }>> = []
+    let currentChunk: Array<{ secao: string; texto: string; tipo: 'check' | 'texto' }> = []
+    
+    const limiteItens = 14 
+    
+    itensChecklistInterno.forEach((secao) => {
+      secao.perguntas.forEach((perg) => {
+        currentChunk.push({
+          secao: secao.titulo,
+          texto: perg.texto,
+          tipo: perg.tipo as 'check' | 'texto'
+        })
+        
+        if (currentChunk.length === limiteItens) {
+          chunks.push(currentChunk)
+          currentChunk = []
+        }
+      })
+    })
+    
+    if (currentChunk.length > 0) {
+      chunks.push(currentChunk)
+    }
+    
+    return chunks
+  }, [itensChecklistInterno])
 
   // Balanças de sobrepor ou semiembutidas têm a pista acima do solo: exige a página de
   // orientação sobre nivelamento dos postes e da base da cancela em relação à pista.
@@ -1628,22 +2109,89 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
   // Calcula a quantidade total de páginas físicas do documento (inclui sempre a capa física no total de lances do visualizador)
   const totalPaginasFisicas = useMemo(() => {
     if (apenasChecklist) {
-      return paginasChecklist.length
+      const extra = tipoDoc === 'picklist' ? paginasChecklistInternoA4.length : 0
+      return paginasChecklist.length + extra
     }
     return 6 + 1 + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0)
-  }, [itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, apenasChecklist])
+  }, [itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, paginasChecklistInternoA4, apenasChecklist, tipoDoc])
 
   // Calcula a quantidade total de páginas do documento (para o carimbo/selo, que pode ou não contar a capa)
   const totalPaginas = useMemo(() => {
     if (apenasChecklist) {
-      return paginasChecklist.length
+      const extra = tipoDoc === 'picklist' ? paginasChecklistInternoA4.length : 0
+      return paginasChecklist.length + extra
     }
     const paginasFixas = (CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + 1
     return paginasFixas + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0)
-  }, [itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, apenasChecklist])
+  }, [itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, paginasChecklistInternoA4, apenasChecklist, tipoDoc])
 
   return (
     <div className="documento-impressao">
+      {capturingPhase === 'capturing' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          color: '#ffffff',
+          fontFamily: 'system-ui, sans-serif'
+        }}>
+          <div style={{
+            backgroundColor: '#1e293b',
+            padding: '30px 40px',
+            borderRadius: '12px',
+            border: '1px solid #475569',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5)',
+            textAlign: 'center',
+            maxWidth: '450px',
+            width: '90%'
+          }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              border: '5px solid #334155',
+              borderTopColor: '#3b82f6',
+              borderRadius: '50%',
+              animation: 'spin-pdf-capture 1s linear infinite',
+              margin: '0 auto 20px auto'
+            }}></div>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '10px' }}>Preparando PDF</h2>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: '1.5' }}>
+              Renderizando vistas 3D em alta resolução para garantir a qualidade do documento...
+            </p>
+            <div style={{
+              width: '100%',
+              height: '8px',
+              backgroundColor: '#334155',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              marginBottom: '10px'
+            }}>
+              <div style={{
+                width: `${((currentCaptureIndex + 1) / pagesToCapture.length) * 100}%`,
+                height: '100%',
+                backgroundColor: '#3b82f6',
+                transition: 'width 0.2s ease-out'
+              }}></div>
+            </div>
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>
+              Página {currentCaptureIndex + 1} de {pagesToCapture.length} ({Math.round(((currentCaptureIndex + 1) / pagesToCapture.length) * 100)}%)
+            </span>
+          </div>
+          <style>{`
+            @keyframes spin-pdf-capture {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
       {/* Barra de Ferramentas de Impressão (Preview) */}
       <div className="barra-preview-pdf">
         <span className="preview-titulo">{apenasChecklist ? 'Checklist de Instalação (A4)' : 'Visualização Técnica (A3)'}</span>
@@ -1749,8 +2297,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       )}
 
       {/* PÁGINA 2: VISÃO GERAL DA BALANÇA (PLANTA DE CIMA) */}
-      {(isPrinting || paginaAtiva === 2) && (
-        <div className="pagina-a3 pagina-tecnica">
+      {(isPrinting || paginaAtiva === 2 || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p2')) && (
+        <div 
+          className="pagina-a3 pagina-tecnica"
+          style={capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p2' ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
+        >
           {/* Cabeçalho Divisor */}
           <div className="cabecalho-tecnico">
             <div className="logo-siamac-doc">
@@ -1782,30 +2333,41 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 margin: '0 auto'
               }}
             >
-              <Canvas
-                orthographic
-                camera={{ 
-                  position: [0, 20, 0], 
-                  zoom: zoom, 
-                  up: [0, 0, -1] 
-                }}
-                style={{ width: '100%', height: '100%' }}
-                gl={{ preserveDrawingBuffer: true }}
-                className="canvas-render-3d"
-              >
-                <color attach="background" args={['#ffffff']} />
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[0, 30, 0]} intensity={1.0} />
-                
-                {pecas.map((p) => (
-                  <Piece
-                    key={p.id}
-                    instancia={p}
-                    modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
-                    mostrarRotulos={false} // Rótulos são gerenciados pelo overlay 2D em SVG/HTML
-                  />
-                ))}
-              </Canvas>
+              {isPrinting && capturedImages['p2'] ? (
+                <img 
+                  src={capturedImages['p2']} 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  alt="Visão Geral" 
+                />
+              ) : (
+                <Canvas
+                  orthographic
+                  camera={{ 
+                    position: [0, 20, 0], 
+                    zoom: zoom, 
+                    up: [0, 0, -1] 
+                  }}
+                  style={{ width: '100%', height: '100%' }}
+                  gl={{ preserveDrawingBuffer: true }}
+                  className="canvas-render-3d"
+                >
+                  <color attach="background" args={['#ffffff']} />
+                  <ambientLight intensity={0.8} />
+                  <directionalLight position={[0, 30, 0]} intensity={1.0} />
+                  
+                  {pecas.map((p) => (
+                    <Piece
+                      key={p.id}
+                      instancia={p}
+                      modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
+                      mostrarRotulos={false}
+                    />
+                  ))}
+                  {capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p2' && (
+                    <CanvasCapturer onCapture={(url) => handleCapture('p2', url)} />
+                  )}
+                </Canvas>
+              )}
 
               {/* Overlay SVG para desenhar os traçados técnicos vermelhos (linhas-guia) */}
               <svg 
@@ -1896,8 +2458,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       )}
 
       {/* PÁGINA 3: AFASTAMENTO DOS EQUIPAMENTOS (COTAS DE AFASTAMENTO EM RELAÇÃO À BALANÇA) */}
-      {(isPrinting || paginaAtiva === 3) && (
-        <div className="pagina-a3 pagina-tecnica">
+      {(isPrinting || paginaAtiva === 3 || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p3')) && (
+        <div 
+          className="pagina-a3 pagina-tecnica"
+          style={capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p3' ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
+        >
           {/* Cabeçalho Divisor */}
           <div className="cabecalho-tecnico">
             <div className="logo-siamac-doc">
@@ -1928,30 +2493,41 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 margin: '0 auto'
               }}
             >
-              <Canvas
-                orthographic
-                camera={{ 
-                  position: [0, 20, 0], 
-                  zoom: zoom, 
-                  up: [0, 0, -1] 
-                }}
-                style={{ width: '100%', height: '100%' }}
-                gl={{ preserveDrawingBuffer: true }}
-                className="canvas-render-3d"
-              >
-                <color attach="background" args={['#ffffff']} />
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[0, 30, 0]} intensity={1.0} />
-                
-                {pecas.map((p) => (
-                  <Piece
-                    key={`p-afast-3d-${p.id}`}
-                    instancia={p}
-                    modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
-                    mostrarRotulos={false}
-                  />
-                ))}
-              </Canvas>
+              {isPrinting && capturedImages['p3'] ? (
+                <img 
+                  src={capturedImages['p3']} 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  alt="Afastamento" 
+                />
+              ) : (
+                <Canvas
+                  orthographic
+                  camera={{ 
+                    position: [0, 20, 0], 
+                    zoom: zoom, 
+                    up: [0, 0, -1] 
+                  }}
+                  style={{ width: '100%', height: '100%' }}
+                  gl={{ preserveDrawingBuffer: true }}
+                  className="canvas-render-3d"
+                >
+                  <color attach="background" args={['#ffffff']} />
+                  <ambientLight intensity={0.8} />
+                  <directionalLight position={[0, 30, 0]} intensity={1.0} />
+                  
+                  {pecas.map((p) => (
+                    <Piece
+                      key={`p-afast-3d-${p.id}`}
+                      instancia={p}
+                      modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
+                      mostrarRotulos={false}
+                    />
+                  ))}
+                  {capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p3' && (
+                    <CanvasCapturer onCapture={(url) => handleCapture('p3', url)} />
+                  )}
+                </Canvas>
+              )}
 
               {/* Overlay SVG para desenhar as cotas técnicas de afastamento */}
               <svg 
@@ -2011,13 +2587,13 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                     
                     if (p.id === 'cancela-entrada' || p.id === 'cancela-saida') {
                       y_cota_inicial = cy - metadeLargura * zoom - 15;
-                    } else if (p.id.includes('siap03') || p.id.includes('siap07')) {
+                    } else if (p.id.includes('siap04') || p.id.includes('siap08')) {
                       y_cota_inicial = cy - metadeLargura * zoom - 45;
                     } else if (p.id.includes('siap02') || p.id.includes('siap06')) {
                       y_cota_inicial = cy - metadeLargura * zoom - 75;
                     } else if (p.id.includes('siap01') || p.id.includes('siap05')) {
                       y_cota_inicial = cy - metadeLargura * zoom - 105;
-                    } else if (p.id.includes('siap04') || p.id.includes('siap08')) {
+                    } else if (p.id.includes('siap03') || p.id.includes('siap07')) {
                       y_cota_inicial = cy + metadeLargura * zoom + 35; // trilha inferior
                     }
 
@@ -2408,10 +2984,16 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       {/* PÁGINAS DE DETALHE INDIVIDUAL DE CADA POSTE E CANCELA ATIVOS */}
       {itensDetalhe.map((item, idx) => {
         const numPag = 5 + idx
-        if (!isPrinting && paginaAtiva !== numPag) return null
+        const isCurrentCapture = capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === `detail-${item.id}`
+        
+        if (!isPrinting && paginaAtiva !== numPag && !isCurrentCapture) return null
 
         return (
-          <div key={item.id} className="pagina-a3 pagina-tecnica">
+          <div 
+            key={item.id} 
+            className="pagina-a3 pagina-tecnica"
+            style={isCurrentCapture ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
+          >
           {/* Cabeçalho Divisor */}
           <div className="cabecalho-tecnico">
             <div className="logo-siamac-doc">
@@ -2439,17 +3021,30 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               <div className="bloco-visualizacao-3d">
                 <div className="container-canvas-poste-detalhe-clean">
                   <div className="canvas-poste-3d-clean">
-                    <PosteDetalheCanvas
-                      tipoPeca={item.tipoPeca}
-                      altura={item.altura}
-                      perifericos={item.perifericos}
-                      calibracoes={calibracoes}
-                      modelosDisponiveis={modelosDisponiveis}
-                      idItem={item.id}
-                      rotacaoInicial={(config.rotacoes3D || {})[item.id] || 0}
-                      onRotationChange={(theta) => handleRotationChange(item.id, theta)}
-                      distanciaCamera={item.tipo === 'painel' ? 2.5 : undefined}
-                    />
+                    {isPrinting && capturedImages[`detail-${item.id}`] ? (
+                      <img 
+                        src={capturedImages[`detail-${item.id}`]} 
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                        alt={item.nomeNoSelo}
+                      />
+                    ) : (
+                      <PosteDetalheCanvas
+                        tipoPeca={item.tipoPeca}
+                        altura={item.altura}
+                        perifericos={item.perifericos}
+                        calibracoes={calibracoes}
+                        modelosDisponiveis={modelosDisponiveis}
+                        idItem={item.id}
+                        rotacaoInicial={(config.rotacoes3D || {})[item.id] || 0}
+                        onRotationChange={(theta) => handleRotationChange(item.id, theta)}
+                        distanciaCamera={item.tipo === 'painel' ? 2.5 : undefined}
+                        onCapture={
+                          capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === `detail-${item.id}`
+                            ? (url) => handleCapture(`detail-${item.id}`, url)
+                            : undefined
+                        }
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="legenda-3d">
@@ -2569,7 +3164,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                     const rede = itensFiacao.find(f => f.equipamento === nomePainel && f.destino === 'Roteador PoE')
                     return (
                       <>
-                        <div className="card-periferico-detalhe cor-vinho">
+                        <div className="card-periferico-detalhe cor-vinho" style={{ maxWidth: '450px', flex: 1 }}>
                           <div className="card-header-perif">
                             <span className="nome-perif">Alimentação e Rede do Painel</span>
                           </div>
@@ -2591,7 +3186,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                           </div>
                         </div>
 
-                        <div className="card-periferico-detalhe cor-azul">
+                        <div className="card-periferico-detalhe cor-azul" style={{ maxWidth: '950px', flex: 2 }}>
                           <div className="card-header-perif">
                             <span className="nome-perif">Cabos que chegam a este painel</span>
                           </div>
@@ -2845,8 +3440,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     })}
 
       {/* PÁGINA 4 (RENUMERADA): EQUIPAMENTOS DOS POSTES (VISÃO GERAL) */}
-      {(isPrinting || paginaAtiva === (5 + itensDetalhe.length)) && (
-        <div className="pagina-a3 pagina-tecnica">
+      {(isPrinting || paginaAtiva === (5 + itensDetalhe.length) || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p4')) && (
+        <div 
+          className="pagina-a3 pagina-tecnica"
+          style={capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p4' ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
+        >
           {/* Cabeçalho Divisor */}
           <div className="cabecalho-tecnico">
             <div className="logo-siamac-doc">
@@ -2878,30 +3476,41 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 margin: '0 auto'
               }}
             >
-              <Canvas
-                orthographic
-                camera={{ 
-                  position: [0, 20, 0], 
-                  zoom: zoom, 
-                  up: [0, 0, -1] 
-                }}
-                style={{ width: '100%', height: '100%' }}
-                gl={{ preserveDrawingBuffer: true }}
-                className="canvas-render-3d"
-              >
-                <color attach="background" args={['#ffffff']} />
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[0, 30, 0]} intensity={1.0} />
-                
-                {pecas.map((p) => (
-                  <Piece
-                    key={`p4-3d-${p.id}`}
-                    instancia={p}
-                    modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
-                    mostrarRotulos={false}
-                  />
-                ))}
-              </Canvas>
+              {isPrinting && capturedImages['p4'] ? (
+                <img 
+                  src={capturedImages['p4']} 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  alt="Equipamentos dos Postes" 
+                />
+              ) : (
+                <Canvas
+                  orthographic
+                  camera={{ 
+                    position: [0, 20, 0], 
+                    zoom: zoom, 
+                    up: [0, 0, -1] 
+                  }}
+                  style={{ width: '100%', height: '100%' }}
+                  gl={{ preserveDrawingBuffer: true }}
+                  className="canvas-render-3d"
+                >
+                  <color attach="background" args={['#ffffff']} />
+                  <ambientLight intensity={0.8} />
+                  <directionalLight position={[0, 30, 0]} intensity={1.0} />
+                  
+                  {pecas.map((p) => (
+                    <Piece
+                      key={`p4-3d-${p.id}`}
+                      instancia={p}
+                      modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
+                      mostrarRotulos={false}
+                    />
+                  ))}
+                  {capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p4' && (
+                    <CanvasCapturer onCapture={(url) => handleCapture('p4', url)} />
+                  )}
+                </Canvas>
+              )}
 
               {/* Overlay SVG para desenhar os traçados técnicos coloridos */}
               <svg 
@@ -3642,15 +4251,30 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
         if (apenasChecklist) {
           // FORMATO A4 RETRATO (Checklist emitido separadamente)
           return (
-            <div key={`checklist-pag-a4-${checklistIdx}`} className="pagina-a4-vertical">
+            <div key={`checklist-pag-a4-${checklistIdx}`} className="pagina-a4-vertical" style={tipoDoc === 'compra' ? {
+              border: '4px solid #b45309',
+              boxShadow: '0 0 0 2px #fff, 0 15px 35px rgba(180, 83, 9, 0.25)',
+              backgroundColor: '#fffdfa'
+            } : {}}>
               {/* Cabeçalho A4 Retrato */}
               <div className="cabecalho-tecnico-a4">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="logo-siamac-doc" style={{ fontSize: '15px' }}>
                     SIAMAC <span>OWL</span>
                   </div>
-                  <div style={{ fontSize: '9.5px', color: '#8b1a1a', fontWeight: 'bold', letterSpacing: '0.05em' }}>
-                    CHECKLIST DE PRÉ-INSTALAÇÃO
+                  <div style={{ 
+                    fontSize: tipoDoc === 'compra' ? '14px' : '9.5px', 
+                    color: tipoDoc === 'compra' ? '#78350f' : '#8b1a1a', 
+                    fontWeight: 'bold', 
+                    letterSpacing: '0.05em',
+                    backgroundColor: tipoDoc === 'compra' ? '#fef3c7' : 'transparent',
+                    padding: tipoDoc === 'compra' ? '4px 10px' : '0',
+                    borderRadius: '4px',
+                    border: tipoDoc === 'compra' ? '1.5px solid #b45309' : 'none'
+                  }}>
+                    {tipoDoc === 'instalacao' && 'CHECKLIST DE PRÉ-INSTALAÇÃO'}
+                    {tipoDoc === 'compra' && 'LISTA DE COMPRA (FORNECIMENTO SIAMAC)'}
+                    {tipoDoc === 'picklist' && 'PICKLIST (CONFERÊNCIA DE CARGA)'}
                   </div>
                 </div>
                 <div style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
@@ -3658,7 +4282,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                   <span>PEDIDO/PROPOSTA: {config.codigoProposta || '-'}</span>
                   <span>DOC: {codigoDocumento}</span>
                 </div>
-                <div style={{ height: '1.5px', background: 'linear-gradient(to right, #8b1a1a, #1a7a4a, #1a4a8b)', marginTop: '5px' }}></div>
+                <div style={{ height: '1.5px', background: tipoDoc === 'compra' ? '#b45309' : 'linear-gradient(to right, #8b1a1a, #1a7a4a, #1a4a8b)', marginTop: '5px' }}></div>
               </div>
 
               {/* Corpo da página com os cards "item a item" */}
@@ -3671,11 +4295,22 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                   itensDaPagina.map((item, idx) => {
                     const itemSeq = checklistIdx * 8 + idx + 1
                     return (
-                      <div key={idx} className="card-checklist-a4">
+                      <div key={idx} className="card-checklist-a4" style={tipoDoc === 'compra' ? {
+                        borderLeft: '4px solid #b45309',
+                        backgroundColor: '#ffffff',
+                        boxShadow: '0 2px 4px rgba(180, 83, 9, 0.08)'
+                      } : {}}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '9.5px', fontWeight: 'bold', color: '#1e3a8a', backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                            {item.ponto}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '9.5px', fontWeight: 'bold', color: '#1e3a8a', backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                              {item.ponto}
+                            </span>
+                            {(tipoDoc === 'picklist' || tipoDoc === 'compra') && item.quantidade !== undefined && (
+                              <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#ffffff', backgroundColor: '#10b981', padding: '1px 6px', borderRadius: '12px' }} title={`Quantidade: ${item.quantidade}`}>
+                                x{item.quantidade}
+                              </span>
+                            )}
+                          </div>
                           <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#64748b' }}>
                             Item #{itemSeq}
                           </span>
@@ -3686,24 +4321,64 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                         </div>
                         
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
-                              <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
-                              Conforme
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
-                              <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
-                              Não Conforme
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
-                              <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
-                              Não Aplicável
-                            </label>
-                          </div>
-                          <div style={{ width: '45%', borderBottom: '1px dashed #cbd5e1', height: '15px', position: 'relative', display: 'flex', alignItems: 'flex-end', paddingBottom: '1px' }}>
-                            <span style={{ fontSize: '7.5px', color: '#94a3b8', marginRight: '4px', fontWeight: 'bold' }}>Obs:</span>
-                            <span style={{ flex: 1 }}></span>
-                          </div>
+                          {tipoDoc === 'instalacao' && (
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
+                                <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                                Conforme
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
+                                <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                                Não Conforme
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
+                                <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                                Não Aplicável
+                              </label>
+                            </div>
+                          )}
+
+                          {tipoDoc === 'compra' && (
+                            <div style={{ display: 'flex', gap: '16px' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
+                                <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                                Tem em Estoque
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
+                                <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                                Comprar
+                              </label>
+                            </div>
+                          )}
+
+                          {tipoDoc === 'picklist' && (
+                            <div style={{ display: 'flex', gap: '16px', flex: 1, alignItems: 'center' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
+                                <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                                Em Estoque
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', color: '#334155', fontWeight: '500' }}>
+                                <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                                Na Carga
+                              </label>
+                              <div style={{ width: '100px', borderBottom: '1px dashed #cbd5e1', height: '15px', position: 'relative', display: 'flex', alignItems: 'flex-end', paddingBottom: '1px', marginLeft: '12px' }}>
+                                <span style={{ fontSize: '7.5px', color: '#64748b', marginRight: '4px', fontWeight: 'bold' }}>Caixa Nº:</span>
+                                <span style={{ flex: 1 }}></span>
+                              </div>
+                            </div>
+                          )}
+
+                          {tipoDoc !== 'picklist' ? (
+                            <div style={{ width: '45%', borderBottom: '1px dashed #cbd5e1', height: '15px', position: 'relative', display: 'flex', alignItems: 'flex-end', paddingBottom: '1px' }}>
+                              <span style={{ fontSize: '7.5px', color: '#94a3b8', marginRight: '4px', fontWeight: 'bold' }}>Obs:</span>
+                              <span style={{ flex: 1 }}></span>
+                            </div>
+                          ) : (
+                            <div style={{ width: '25%', borderBottom: '1px dashed #cbd5e1', height: '15px', position: 'relative', display: 'flex', alignItems: 'flex-end', paddingBottom: '1px' }}>
+                              <span style={{ fontSize: '7.5px', color: '#94a3b8', marginRight: '4px', fontWeight: 'bold' }}>Obs:</span>
+                              <span style={{ flex: 1 }}></span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
@@ -3714,31 +4389,91 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               {/* Assinaturas na última folha do A4 */}
               {ehUltimaPagina && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', padding: '0 10px', boxSizing: 'border-box' }}>
-                  <div style={{ width: '45%', textAlign: 'center' }}>
-                    <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
-                      <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>TÉCNICO RESPONSÁVEL</span>
-                      <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>SIAMAC AUTOMAÇÃO / PARCEIRO</span>
-                    </div>
-                  </div>
-                  <div style={{ width: '45%', textAlign: 'center' }}>
-                    <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
-                      <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>REPRESENTANTE DO CLIENTE (ACEITE)</span>
-                      <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>NOME / CARGO / DATA</span>
-                    </div>
-                  </div>
+                  {tipoDoc === 'instalacao' && (
+                    <>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>TÉCNICO RESPONSÁVEL</span>
+                          <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>SIAMAC AUTOMAÇÃO / PARCEIRO</span>
+                        </div>
+                      </div>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>REPRESENTANTE DO CLIENTE (ACEITE)</span>
+                          <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>NOME / CARGO / DATA</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {tipoDoc === 'compra' && (
+                    <>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>RESPONSÁVEL PELO ESTOQUE</span>
+                          <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>SEPARAÇÃO / ALMOXARIFADO</span>
+                        </div>
+                      </div>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>RESPONSÁVEL SUPRIMENTOS</span>
+                          <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>COMPRAS / VALIDAÇÃO</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {tipoDoc === 'picklist' && (
+                    <>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>RESPONSÁVEL PELA SEPARAÇÃO</span>
+                          <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>CONFERÊNCIA DE CARGA</span>
+                        </div>
+                      </div>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.2px solid #475569', marginTop: '25px', paddingTop: '4px' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>CONFERIDO POR (EXPEDIÇÃO)</span>
+                          <span style={{ fontSize: '7.5px', color: '#64748b', display: 'block' }}>ASSINATURA / DATA</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
               {/* Rodapé A4 Retrato */}
               <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ fontSize: '7.5px', color: '#64748b', maxWidth: '70%', lineHeight: '1.2' }}>
-                  <strong>NOTAS DE COMISSIONAMENTO:</strong>
-                  <ul style={{ paddingLeft: '10px', margin: '2px 0 0 0', fontSize: '7px' }}>
-                    <li>Todos os itens devem ser testados na presença do cliente.</li>
-                    <li>Itens não conformes (NC) devem ter justificativa e plano de ação anotados.</li>
-                    <li>Envie este documento digitalizado e assinado para validação da garantia.</li>
-                    <li>Este documento apresenta um dimensionamento técnico orientativo para infraestrutura de automação de balança rodoviária. As posições, bases, fundações, eletrodutos, alimentação elétrica, aterramento e demais elementos civis/elétricos devem ser validados em campo e, quando aplicável, por responsável técnico habilitado. Este documento não substitui projeto executivo civil, estrutural, elétrico, SPDA, aterramento ou ART específica da obra.</li>
-                  </ul>
+                  {tipoDoc === 'instalacao' && (
+                    <>
+                      <strong>NOTAS DE COMISSIONAMENTO:</strong>
+                      <ul style={{ paddingLeft: '10px', margin: '2px 0 0 0', fontSize: '7px' }}>
+                        <li>Todos os itens devem ser testados na presença do cliente.</li>
+                        <li>Itens não conformes (NC) devem ter justificativa e plano de ação anotados.</li>
+                        <li>Envie este documento digitalizado e assinado para validação da garantia.</li>
+                        <li>Este documento apresenta um dimensionamento técnico orientativo para infraestrutura de automação de balança rodoviária. As posições, bases, fundações, eletrodutos, alimentação elétrica, aterramento e demais elementos civis/elétricos devem ser validados em campo e, quando aplicável, por responsável técnico habilitado. Este documento não substitui projeto executivo civil, estrutural, elétrico, SPDA, aterramento ou ART específica da obra.</li>
+                      </ul>
+                    </>
+                  )}
+                  {tipoDoc === 'compra' && (
+                    <>
+                      <strong>NOTAS DE SEPARAÇÃO E ESTOQUE:</strong>
+                      <ul style={{ paddingLeft: '10px', margin: '2px 0 0 0', fontSize: '7px' }}>
+                        <li>Verificar a disponibilidade física imediata de cada item no estoque principal.</li>
+                        <li>Caso o item não esteja disponível no estoque, marcar "Comprar" e abrir ordem de compra imediata.</li>
+                        <li>Este documento destina-se ao controle interno de materiais e faturamento da SIAMAC.</li>
+                      </ul>
+                    </>
+                  )}
+                  {tipoDoc === 'picklist' && (
+                    <>
+                      <strong>NOTAS DE CONFERÊNCIA DE CARGA:</strong>
+                      <ul style={{ paddingLeft: '10px', margin: '2px 0 0 0', fontSize: '7px' }}>
+                        <li>Marcar "Na Carga" somente após conferir fisicamente que o item foi embarcado no veículo de transporte.</li>
+                        <li>Anotar o número da caixa/embalagem correspondente para fins de conferência no cliente final.</li>
+                        <li>Conferir acessórios, cabos de conexão e suportes de fixação associados antes do fechamento dos volumes.</li>
+                      </ul>
+                    </>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '8px', color: '#475569', fontWeight: 'bold' }}>
                   <span>PÁGINA {numPaginaSelo} DE {totalPaginas}</span>
@@ -3751,7 +4486,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
         // FORMATO A3 PAISAGEM (Anexo da Documentação Técnica completa)
         return (
-          <div key={`checklist-pag-a3-${checklistIdx}`} className="pagina-a3 pagina-tecnica">
+          <div key={`checklist-pag-a3-${checklistIdx}`} className="pagina-a3 pagina-tecnica" style={tipoDoc === 'compra' ? {
+            border: '5px solid #b45309',
+            boxShadow: '0 0 0 2px #fff, 0 15px 35px rgba(180, 83, 9, 0.25)',
+            backgroundColor: '#fffdfa'
+          } : {}}>
             {/* Cabeçalho Divisor */}
             <div className="cabecalho-tecnico">
               <div className="logo-siamac-doc">
@@ -3762,13 +4501,32 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               </div>
             </div>
             <div className="decoracao-linha-cabecalho">
-              <div className="linha-vinho"></div>
-              <div className="linha-verde"></div>
-              <div className="linha-azul"></div>
+              {tipoDoc === 'compra' ? (
+                <div style={{ width: '100%', height: '100%', backgroundColor: '#b45309' }}></div>
+              ) : (
+                <>
+                  <div className="linha-vinho"></div>
+                  <div className="linha-verde"></div>
+                  <div className="linha-azul"></div>
+                </>
+              )}
             </div>
 
-            <div className="titulo-planta-pagina">
-              CHECKLIST DE PRÉ-INSTALAÇÃO {paginasChecklist.length > 1 ? `(FOLHA ${checklistIdx + 1}/${paginasChecklist.length})` : ''}
+            <div className="titulo-planta-pagina" style={tipoDoc === 'compra' ? {
+              fontSize: '22px',
+              color: '#78350f',
+              backgroundColor: '#fef3c7',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              borderLeft: '6px solid #b45309',
+              display: 'inline-block',
+              marginBottom: '14px',
+              fontWeight: '900',
+              boxShadow: '0 1px 3px rgba(180, 83, 9, 0.15)'
+            } : {}}>
+              {tipoDoc === 'instalacao' && `CHECKLIST DE PRÉ-INSTALAÇÃO ${paginasChecklist.length > 1 ? `(FOLHA ${checklistIdx + 1}/${paginasChecklist.length})` : ''}`}
+              {tipoDoc === 'compra' && `LISTA DE COMPRA (FORNECIMENTO SIAMAC) ${paginasChecklist.length > 1 ? `(FOLHA ${checklistIdx + 1}/${paginasChecklist.length})` : ''}`}
+              {tipoDoc === 'picklist' && `PICKLIST DE CARGA ${paginasChecklist.length > 1 ? `(FOLHA ${checklistIdx + 1}/${paginasChecklist.length})` : ''}`}
             </div>
 
             <div className="conteudo-tecnico" style={{ border: 'none', background: 'transparent', boxShadow: 'none', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', padding: '10px 0' }}>
@@ -3783,10 +4541,32 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                       <tr>
                         <th style={{ width: '6%', textAlign: 'center', padding: '5px' }}>Item</th>
                         <th style={{ width: '22%', padding: '5px' }}>Equipamento / Ponto</th>
-                        <th style={{ width: '42%', padding: '5px' }}>Item de Verificação (Checklist)</th>
-                        <th style={{ width: '4%', textAlign: 'center', padding: '5px' }}>C</th>
-                        <th style={{ width: '4%', textAlign: 'center', padding: '5px' }}>NC</th>
-                        <th style={{ width: '4%', textAlign: 'center', padding: '5px' }}>NA</th>
+                        <th style={{ 
+                          width: tipoDoc === 'instalacao' ? '42%' : (tipoDoc === 'picklist' ? '38%' : '42%'), 
+                          padding: '5px' 
+                        }}>
+                          {tipoDoc === 'instalacao' ? 'Item de Verificação (Checklist)' : 'Descrição do Item a Fornecer'}
+                        </th>
+                        {tipoDoc === 'instalacao' && (
+                          <>
+                            <th style={{ width: '4%', textAlign: 'center', padding: '5px' }}>C</th>
+                            <th style={{ width: '4%', textAlign: 'center', padding: '5px' }}>NC</th>
+                            <th style={{ width: '4%', textAlign: 'center', padding: '5px' }}>NA</th>
+                          </>
+                        )}
+                        {tipoDoc === 'compra' && (
+                          <>
+                            <th style={{ width: '6%', textAlign: 'center', padding: '5px' }}>EST</th>
+                            <th style={{ width: '6%', textAlign: 'center', padding: '5px' }}>COM</th>
+                          </>
+                        )}
+                        {tipoDoc === 'picklist' && (
+                          <>
+                            <th style={{ width: '5%', textAlign: 'center', padding: '5px' }}>EST</th>
+                            <th style={{ width: '5%', textAlign: 'center', padding: '5px' }}>CARG</th>
+                            <th style={{ width: '6%', textAlign: 'center', padding: '5px' }}>CAIXA</th>
+                          </>
+                        )}
                         <th style={{ width: '18%', padding: '5px' }}>Observações / Ações Corretivas</th>
                       </tr>
                     </thead>
@@ -3796,17 +4576,53 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                         return (
                           <tr key={idx} style={{ height: '36px' }}>
                             <td style={{ textAlign: 'center', fontWeight: 'bold', padding: '4px' }}>{itemSeq}</td>
-                            <td style={{ fontWeight: 'bold', padding: '4px', fontSize: '9px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{item.ponto}</td>
+                            <td style={{ fontWeight: 'bold', padding: '4px', fontSize: '9px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                              {item.ponto}
+                              {(tipoDoc === 'picklist' || tipoDoc === 'compra') && item.quantidade !== undefined && (
+                                <span style={{ marginLeft: '6px', fontSize: '8.5px', color: '#10b981', backgroundColor: '#ecfdf5', padding: '1px 4px', borderRadius: '4px', border: '1px solid #a7f3d0', fontWeight: 'bold' }}>
+                                  x{item.quantidade}
+                                </span>
+                              )}
+                            </td>
                             <td style={{ fontSize: '9px', lineHeight: '1.2', padding: '4px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{item.pergunta}</td>
-                            <td style={{ textAlign: 'center', padding: '4px' }}>
-                              <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
-                            </td>
-                            <td style={{ textAlign: 'center', padding: '4px' }}>
-                              <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
-                            </td>
-                            <td style={{ textAlign: 'center', padding: '4px' }}>
-                              <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
-                            </td>
+                            
+                            {tipoDoc === 'instalacao' && (
+                              <>
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                  <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
+                                </td>
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                  <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
+                                </td>
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                  <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
+                                </td>
+                              </>
+                            )}
+
+                            {tipoDoc === 'compra' && (
+                              <>
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                  <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
+                                </td>
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                  <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
+                                </td>
+                              </>
+                            )}
+
+                            {tipoDoc === 'picklist' && (
+                              <>
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                  <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
+                                </td>
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                  <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '1.5px', margin: '0 auto' }}></div>
+                                </td>
+                                <td style={{ padding: '4px', borderBottom: '1px dashed #cbd5e1' }}></td>
+                              </>
+                            )}
+                            
                             <td style={{ padding: '4px' }}></td>
                           </tr>
                         )
@@ -3818,18 +4634,54 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
               {ehUltimaPagina && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '0 20px', width: '100%', boxSizing: 'border-box' }}>
-                  <div style={{ width: '45%', textAlign: 'center' }}>
-                    <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>TÉCNICO RESPONSÁVEL</span>
-                      <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>SIAMAC AUTOMAÇÃO / PARCEIRO CREDENCIADO</span>
-                    </div>
-                  </div>
-                  <div style={{ width: '45%', textAlign: 'center' }}>
-                    <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>REPRESENTANTE DO CLIENTE (ACEITE)</span>
-                      <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>NOME / CARGO / DATA</span>
-                    </div>
-                  </div>
+                  {tipoDoc === 'instalacao' && (
+                    <>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>TÉCNICO RESPONSÁVEL</span>
+                          <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>SIAMAC AUTOMAÇÃO / PARCEIRO CREDENCIADO</span>
+                        </div>
+                      </div>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>REPRESENTANTE DO CLIENTE (ACEITE)</span>
+                          <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>NOME / CARGO / DATA</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {tipoDoc === 'compra' && (
+                    <>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>RESPONSÁVEL PELO ESTOQUE</span>
+                          <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>SEPARAÇÃO / ALMOXARIFADO</span>
+                        </div>
+                      </div>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>RESPONSÁVEL SUPRIMENTOS</span>
+                          <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>COMPRAS / VALIDAÇÃO</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {tipoDoc === 'picklist' && (
+                    <>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>RESPONSÁVEL PELA SEPARAÇÃO</span>
+                          <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>CONFERÊNCIA DE CARGA</span>
+                        </div>
+                      </div>
+                      <div style={{ width: '45%', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1.5px solid #475569', marginTop: '35px', paddingTop: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>CONFERIDO POR (EXPEDIÇÃO)</span>
+                          <span style={{ fontSize: '8.5px', color: '#64748b', display: 'block' }}>ASSINATURA / DATA</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -3837,18 +4689,48 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
             {/* Rodapé com as notas técnicas e o carimbo caraterístico */}
             <div className="rodape-tecnico">
               <div className="notes-rodape" style={{ fontSize: '9px', color: '#475569', maxWidth: '60%', lineHeight: '1.3' }}>
-                <strong>NOTAS DE COMISSIONAMENTO:</strong>
-                <ol style={{ paddingLeft: '14px', marginTop: '4px', margin: 0 }}>
-                  <li>Todos os itens devem ser verificados e testados pelo técnico de campo na presença do cliente.</li>
-                  <li>Itens não conformes (NC) devem ser justificados no campo de observações, constando a ação corretiva e novo prazo de teste.</li>
-                  <li>Este documento devidamente assinado deve ser digitalizado e enviado para a SIAMAC para fins de validação da garantia do sistema.</li>
-                  <li>Este documento apresenta um dimensionamento técnico orientativo para infraestrutura de automação de balança rodoviária. As posições, bases, fundações, eletrodutos, alimentação elétrica, aterramento e demais elementos civis/elétricos devem ser validados em campo e, quando aplicável, por responsável técnico habilitado. Este documento não substitui projeto executivo civil, estrutural, elétrico, SPDA, aterramento ou ART específica da obra.</li>
-                </ol>
+                {tipoDoc === 'instalacao' && (
+                  <>
+                    <strong>NOTAS DE COMISSIONAMENTO:</strong>
+                    <ol style={{ paddingLeft: '14px', marginTop: '4px', margin: 0 }}>
+                      <li>Todos os itens devem ser verificados e testados pelo técnico de campo na presença do cliente.</li>
+                      <li>Itens não conformes (NC) devem ser justificados no campo de observações, constando a ação corretiva e novo prazo de teste.</li>
+                      <li>Este documento devidamente assinado deve ser digitalizado e enviado para a SIAMAC para fins de validação da garantia do sistema.</li>
+                      <li>Este documento apresenta um dimensionamento técnico orientativo para infraestrutura de automação de balança rodoviária. As posições, bases, fundações, eletrodutos, alimentação elétrica, aterramento e demais elements civis/elétricos devem ser validados em campo e, quando aplicável, por responsável técnico habilitado. Este documento não substitui projeto executivo civil, estrutural, elétrico, SPDA, aterramento ou ART específica da obra.</li>
+                    </ol>
+                  </>
+                )}
+                {tipoDoc === 'compra' && (
+                  <>
+                    <strong>NOTAS DE SEPARAÇÃO E ESTOQUE:</strong>
+                    <ol style={{ paddingLeft: '14px', marginTop: '4px', margin: 0 }}>
+                      <li>Verificar a disponibilidade física imediata de cada item no estoque principal.</li>
+                      <li>Caso o item não esteja disponível no estoque, marcar "Comprar" e abrir ordem de compra imediata.</li>
+                      <li>Este documento destina-se ao controle interno de materiais e faturamento da SIAMAC.</li>
+                    </ol>
+                  </>
+                )}
+                {tipoDoc === 'picklist' && (
+                  <>
+                    <strong>NOTAS DE CONFERÊNCIA DE CARGA:</strong>
+                    <ol style={{ paddingLeft: '14px', marginTop: '4px', margin: 0 }}>
+                      <li>Marcar "Na Carga" somente após conferir fisicamente que o item foi embarcado no veículo de transporte.</li>
+                      <li>Anotar o número da caixa/embalagem correspondente para fins de conferência no cliente final.</li>
+                      <li>Conferir acessórios, cabos de conexão e suportes de fixação associados antes do fechamento dos volumes.</li>
+                    </ol>
+                  </>
+                )}
               </div>
               
               <SeloPagina
                 config={config}
-                tituloPlanta={`CHECKLIST DE PRÉ-INSTALAÇÃO ${paginasChecklist.length > 1 ? `FL.${checklistIdx + 1}` : ''}`}
+                tituloPlanta={
+                  tipoDoc === 'instalacao'
+                    ? `CHECKLIST DE PRÉ-INSTALAÇÃO ${paginasChecklist.length > 1 ? `FL.${checklistIdx + 1}` : ''}`
+                    : tipoDoc === 'compra'
+                    ? `LISTA DE COMPRA ${paginasChecklist.length > 1 ? `FL.${checklistIdx + 1}` : ''}`
+                    : `PICKLIST DE CARGA ${paginasChecklist.length > 1 ? `FL.${checklistIdx + 1}` : ''}`
+                }
                 revisao={config.revisao}
                 paginaNum={numPaginaSelo}
                 totalPaginas={totalPaginas}
@@ -3856,6 +4738,119 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
             </div>
           </div>
         )
+      })}
+
+      {/* PÁGINAS DO CHECKLIST INTERNO DO PICKLIST (Apenas no tipoDoc === 'picklist') */}
+      {apenasChecklist && tipoDoc === 'picklist' && paginasChecklistInternoA4.map((itensDaPagina, internoIdx) => {
+         const checklistIdx = paginasChecklist.length + internoIdx
+         const numPaginaFisica = 1 + checklistIdx
+         const numPaginaSelo = 1 + checklistIdx
+         
+         if (!isPrinting && paginaAtiva !== numPaginaFisica) return null
+         
+         const ehUltimaPagina = internoIdx === paginasChecklistInternoA4.length - 1
+         
+         return (
+           <div key={`picklist-interno-pag-${internoIdx}`} className="pagina-a4-vertical">
+             {/* Cabeçalho A4 Retrato */}
+             <div className="cabecalho-tecnico-a4">
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                 <div className="logo-siamac-doc" style={{ fontSize: '15px' }}>
+                   SIAMAC <span>OWL</span>
+                 </div>
+                 <div style={{ fontSize: '9.5px', color: '#16a34a', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                   CHECKLIST INTERNO DE CONFIGURAÇÃO E TESTES
+                 </div>
+               </div>
+               <div style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                 <span>CLIENTE: {config.cliente || '-'}</span>
+                 <span>PEDIDO/PROPOSTA: {config.codigoProposta || '-'}</span>
+                 <span>DOC: {codigoDocumento}</span>
+               </div>
+               <div style={{ height: '1.5px', background: 'linear-gradient(to right, #16a34a, #10b981, #06b6d4)', marginTop: '5px' }}></div>
+             </div>
+
+             {/* Corpo da página do checklist interno */}
+             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '8px', overflow: 'hidden', margin: '10px 0' }}>
+               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '4px', padding: '6px 10px', fontSize: '8.5px', color: '#166534', lineHeight: '1.3', fontWeight: '500' }}>
+                 <strong>CHECKLIST DE CONFIGURAÇÃO E TESTE INTERNO DE EQUIPAMENTOS (FÁBRICA/EXPEDIÇÃO)</strong>
+                 <br />
+                 Todos os itens abaixo referentes aos equipamentos presentes no projeto devem ser obrigatoriamente testados, configurados e validados antes da liberação da carga para transporte.
+               </div>
+
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                 {itensDaPagina.map((item, idx) => {
+                   const mostrarCabecalhoSecao = idx === 0 || itensDaPagina[idx - 1].secao !== item.secao
+                   return (
+                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                       {mostrarCabecalhoSecao && (
+                         <div style={{ fontSize: '8.5px', fontWeight: 'bold', color: '#1e3a8a', borderBottom: '1px solid #cbd5e1', paddingBottom: '2px', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                           {item.secao}
+                         </div>
+                       )}
+                       
+                       <div className="card-checklist-a4" style={{ padding: '6px 10px', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '28px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                         <div style={{ fontSize: '8.5px', color: '#334155', fontWeight: '500', flex: 1, paddingRight: '12px' }}>
+                           {item.texto}
+                         </div>
+                         
+                         {item.tipo === 'check' ? (
+                           <div style={{ display: 'flex', gap: '10px' }}>
+                             <label style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}>
+                               <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                               SIM
+                             </label>
+                             <label style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}>
+                               <div style={{ width: '10px', height: '10px', border: '1.2px solid #64748b', borderRadius: '2px' }}></div>
+                               NÃO
+                             </label>
+                           </div>
+                         ) : (
+                           <div style={{ width: '120px', borderBottom: '1px dashed #94a3b8', height: '14px', position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
+                             <span style={{ flex: 1 }}></span>
+                           </div>
+                         )}
+                       </div>
+                     </div>
+                   )
+                 })}
+               </div>
+             </div>
+
+             {/* Assinaturas na última folha */}
+             {ehUltimaPagina && (
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '15px', padding: '0 5px', boxSizing: 'border-box' }}>
+                 <div style={{ width: '45%', textAlign: 'center' }}>
+                   <div style={{ borderTop: '1.2px solid #475569', marginTop: '20px', paddingTop: '4px' }}>
+                     <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>TÉCNICO DE CONFIGURAÇÃO / TESTES</span>
+                     <span style={{ fontSize: '7px', color: '#64748b', display: 'block' }}>SIAMAC AUTOMAÇÃO</span>
+                   </div>
+                 </div>
+                 <div style={{ width: '45%', textAlign: 'center' }}>
+                   <div style={{ borderTop: '1.2px solid #475569', marginTop: '20px', paddingTop: '4px' }}>
+                     <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#1e293b', display: 'block' }}>RESPONSÁVEL PELA EXPEDIÇÃO</span>
+                     <span style={{ fontSize: '7px', color: '#64748b', display: 'block' }}>CONFERÊNCIA FINAL</span>
+                   </div>
+                 </div>
+               </div>
+             )}
+
+             {/* Rodapé A4 Retrato */}
+             <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '6px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+               <div style={{ fontSize: '7.5px', color: '#64748b', maxWidth: '70%', lineHeight: '1.2' }}>
+                 <strong>NOTAS DO CHECKLIST INTERNO:</strong>
+                 <ul style={{ paddingLeft: '10px', margin: '2px 0 0 0', fontSize: '7px' }}>
+                   <li>Este checklist é de uso exclusivo interno da SIAMAC e atesta a conformidade técnica dos equipamentos antes do envio.</li>
+                   <li>A liberação dos equipamentos para viagem só poderá ser feita mediante a total conformidade de todos os itens aplicáveis deste documento.</li>
+                 </ul>
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '8px', color: '#475569', fontWeight: 'bold' }}>
+                 <span>PÁGINA {numPaginaSelo} DE {totalPaginas}</span>
+                 <span style={{ color: '#10b981', fontSize: '7px', marginTop: '2px' }}>REV. R{String(config.revisao).padStart(2, '0')}</span>
+               </div>
+             </div>
+           </div>
+         )
       })}
 
     </div>
