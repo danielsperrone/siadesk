@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CATALOGO } from '../catalog/pieces'
+import { CATALOGO, MODELOS_VEICULO } from '../catalog/pieces'
 
 // Verifica quais arquivos GLB existem em public/models/. Peças sem modelo
 // são renderizadas como placeholder; ao adicionar o GLB exportado do
@@ -10,7 +10,7 @@ export function useModelosDisponiveis(): Set<string> {
   useEffect(() => {
     let cancelado = false
     async function verificar() {
-      const nomes = [...new Set(Object.values(CATALOGO).map((p) => p.modelo))]
+      const nomes = [...new Set([...Object.values(CATALOGO), ...Object.values(MODELOS_VEICULO)].map((p) => p.modelo))]
       const resultados = await Promise.all(
         nomes.map(async (nome) => {
           try {

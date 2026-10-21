@@ -1,0 +1,187 @@
+{
+  "geometry": {
+    "wheels": 10,
+    "forward": true,
+    "stopped": true,
+    "centered": true,
+    "reversible": true,
+    "filledMarking": true,
+    "seamLeaks": [],
+    "markingSamples": 3066,
+    "occludedMarkings": [],
+    "markings": [
+      {
+        "name": "identificacao-lateral--1",
+        "text": "SIAU 634601 2",
+        "face": "side-"
+      },
+      {
+        "name": "tipo-lateral--1",
+        "text": "42G1",
+        "face": "side-"
+      },
+      {
+        "name": "identificacao-lateral-1",
+        "text": "SIAU 634601 2",
+        "face": "side+"
+      },
+      {
+        "name": "tipo-lateral-1",
+        "text": "42G1",
+        "face": "side+"
+      },
+      {
+        "name": "identificacao-frente",
+        "text": "SIAU 634601 2",
+        "face": "front"
+      },
+      {
+        "name": "tipo-frente",
+        "text": "42G1",
+        "face": "front"
+      },
+      {
+        "name": "identificacao-teto",
+        "text": "SIAU 634601 2",
+        "face": "roof"
+      },
+      {
+        "name": "tipo-teto",
+        "text": "42G1",
+        "face": "roof"
+      },
+      {
+        "name": "identificacao-portas",
+        "text": "SIAU 634601 2",
+        "face": "rear"
+      },
+      {
+        "name": "tipo-portas",
+        "text": "42G1",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-0-label",
+        "text": "MAX. GROSS",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-0",
+        "text": "30,480 KG",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-1",
+        "text": "67,200 LB",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-2-label",
+        "text": "TARE",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-2",
+        "text": "3,750 KG",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-3",
+        "text": "8,270 LB",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-4-label",
+        "text": "NET",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-4",
+        "text": "26,730 KG",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-5",
+        "text": "58,930 LB",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-6-label",
+        "text": "CU. CAP.",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-6",
+        "text": "67.7 CU.M",
+        "face": "rear"
+      },
+      {
+        "name": "pesos-portas-7",
+        "text": "2,390 CU.FT",
+        "face": "rear"
+      },
+      {
+        "name": "logo-porta",
+        "text": "SIAMAC",
+        "face": "rear"
+      },
+      {
+        "name": "placa-csc-0",
+        "text": "CSC SAFETY APPROVAL",
+        "face": "rear"
+      },
+      {
+        "name": "placa-csc-1",
+        "text": "TYPE 40 STANDARD / 42G1",
+        "face": "rear"
+      },
+      {
+        "name": "placa-csc-2",
+        "text": "MAX GROSS 30,480 KG",
+        "face": "rear"
+      },
+      {
+        "name": "placa-csc-3",
+        "text": "STACKING 192,000 KG",
+        "face": "rear"
+      },
+      {
+        "name": "placa-csc-4",
+        "text": "RACKING 150 KN",
+        "face": "rear"
+      },
+      {
+        "name": "placa-csc-5",
+        "text": "SIAMAC / DEMONSTRACAO",
+        "face": "rear"
+      },
+      {
+        "name": "aviso-porta",
+        "text": "CAUTION",
+        "face": "rear"
+      },
+      {
+        "name": "aviso-porta-inferior",
+        "text": "DOOR OPENING",
+        "face": "rear"
+      },
+      {
+        "name": "selo-inspecao",
+        "text": "ACEP",
+        "face": "rear"
+      }
+    ],
+    "bounds": [
+      13.852798828124998,
+      3.190759902114868,
+      2.28031689453125
+    ]
+  },
+  "selector": true,
+  "oldProjectsDefault": true,
+  "movement": true,
+  "inversion": true,
+  "projectRoundtrip": true,
+  "switchBack": true,
+  "errors": []
+}

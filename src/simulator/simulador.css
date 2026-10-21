@@ -1,0 +1,37 @@
+.painel-simulador { margin: 16px 0 24px; padding: 16px; background: #141b22; border: 1px solid #3b4a58; border-radius: 8px; color: #e2e8f0; font-size: 12px; }
+.painel-simulador h3 { margin: 0 0 8px; font-size: 15px; color: #fff; }
+.painel-simulador h4 { margin: 0 0 12px; font-size: 13px; color: #fff; }
+.clp-description { color: #a4b4c0; line-height: 1.6; margin: 8px 0 12px; }
+.clp-status { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.clp-dot { width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; flex-shrink: 0; }
+.clp-dot.on { background: #34d399; }
+.clp-section { border-top: 1px solid #3b4a58; padding-top: 16px; margin-top: 20px; }
+.painel-simulador .controle-sinalizacao { margin: 12px 0; }
+.painel-simulador button { background: #263544; border: 1px solid #64748b; border-radius: 6px; color: #f1f5f9; padding: 8px 10px; font: inherit; cursor: pointer; }
+.painel-simulador button:hover:not(:disabled) { background: #34495d; }
+.painel-simulador button:disabled { opacity: .5; cursor: not-allowed; }
+.painel-simulador button:focus-visible, .painel-simulador summary:focus-visible { outline: 2px solid #34d399; outline-offset: 3px; }
+.painel-simulador input[type='number'] { width: 100%; box-sizing: border-box; }
+.clp-actions { display: flex; gap: 8px; margin: 8px 0; }
+.clp-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 4px; }
+.clp-row strong span { font-weight: 400; color: #a4b4c0; }
+.clp-error { color: #fecaca; background: #401c22; padding: 8px; border-radius: 6px; line-height: 1.5; }
+.clp-error p { margin: 4px 0; }
+.painel-simulador summary { cursor: pointer; font-weight: 600; padding: 3px 0; }
+.clp-input { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.clp-log { list-style: none; padding: 0; max-height: 180px; overflow: auto; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.clp-log time { color: #a4b4c0; }
+.painel-simulador .clp-recolher { display: flex; align-items: center; justify-content: space-between; width: 100%; background: transparent; padding: 0; border: 0; color: #f1f5f9; text-align: left; font-size: 15px; font-weight: 600; }
+.clp-conexoes { margin-bottom: 0; }
+.clp-recolher + .clp-status { margin-top: 8px; }
+.painel-simulador input[type='range'] { display: block; width: 100%; margin: 8px 0; accent-color: #34d399; }
+.painel-simulador .controle-sinalizacao small { display: block; }
+.indicador-peso { border-top: 1px solid #64748b; padding-top: 10px; margin-top: 4px; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #e2e8f0; }
+.indicador-peso output { font-size: 25px; font-weight: 700; font-variant-numeric: tabular-nums; color: #fff; }
+.indicador-peso small { color: #cbd5e1; }
+.peso-estavel { color: #6ee7b7; }
+.peso-oscilando { color: #fcd34d; }
+.peso-veiculo-valor { font-size: 32px; font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+.peso-limites { display: flex; justify-content: space-between; color: #a4b4c0; font-size: 11px; }
+.modal-configuracao input[type='range'] { width: 100%; accent-color: #34d399; }
+.modal-configuracao input[type='number'] { padding: 9px 10px; background: #1e293b; color: #f1f5f9; border: 1px solid #64748b; border-radius: 6px; font: inherit; }

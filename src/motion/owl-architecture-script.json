@@ -1,0 +1,68 @@
+[
+  {
+    "id": "bancos",
+    "logicalStart": 0,
+    "logicalEnd": 8,
+    "text": "O OWL, da SIAMAC, acompanha a estrutura da sua operação. O sistema pode utilizar SQL Server Express ou MySQL como banco de dados. E você pode organizar essa estrutura de cinco formas: local, local com servidor, centralizada, em nuvem ou híbrida."
+  },
+  {
+    "id": "pesagem",
+    "logicalStart": 8,
+    "logicalEnd": 18,
+    "text": "Antes de conhecer as arquiteturas, entenda o papel dos computadores. O computador de pesagem é aquele que se conecta fisicamente à balança, recebe a indicação de peso e executa a operação no OWL. Ele é o ponto de trabalho de quem realiza a pesagem."
+  },
+  {
+    "id": "clientes",
+    "logicalStart": 18,
+    "logicalEnd": 28,
+    "text": "Já os computadores clientes permitem visualizar as pesagens, emitir relatórios e gerenciar as informações. Assim, outras pessoas podem acompanhar a operação e cuidar da gestão a partir dos seus próprios computadores, acessando os dados da estrutura escolhida."
+  },
+  {
+    "id": "local",
+    "logicalStart": 28,
+    "logicalEnd": 38,
+    "text": "Na arquitetura local, o banco de dados fica instalado no mesmo computador que executa o sistema de pesagem. O OWL e os registros da operação ficam juntos. É uma estrutura concentrada em um único computador, junto à balança."
+  },
+  {
+    "id": "local-servidor",
+    "logicalStart": 38,
+    "logicalEnd": 49,
+    "text": "Na arquitetura local com servidor, o banco de dados fica em outro computador, dentro da mesma rede. O computador da balança realiza a pesagem e acessa esse servidor pela rede local. Os computadores clientes também podem acessar essa estrutura."
+  },
+  {
+    "id": "centralizado",
+    "logicalStart": 49,
+    "logicalEnd": 61,
+    "text": "Na arquitetura centralizada, existe um único banco de dados na central do cliente. Cada unidade se conecta diretamente a esse servidor, pela infraestrutura de rede e por uma VPN. As informações ficam reunidas na central, e o acesso das unidades depende da conexão com esse ambiente."
+  },
+  {
+    "id": "nuvem",
+    "logicalStart": 61,
+    "logicalEnd": 73,
+    "text": "Na arquitetura em nuvem, o conceito é semelhante, mas o servidor fica hospedado na nuvem, em vez de estar em uma instalação do cliente. As unidades acessam esse ambiente pela conexão de rede configurada. O banco permanece centralizado, agora em uma infraestrutura hospedada."
+  },
+  {
+    "id": "hibrida-local",
+    "logicalStart": 73,
+    "logicalEnd": 79,
+    "text": "Na arquitetura híbrida, cada unidade possui seu próprio servidor local. Os computadores de pesagem usam o banco da própria unidade. Por isso, a operação local não depende da internet para realizar as pesagens, mesmo quando a conexão com a central está indisponível."
+  },
+  {
+    "id": "hibrida-integracao",
+    "logicalStart": 79,
+    "logicalEnd": 85,
+    "text": "Ao finalizar cada pesagem, os dados são integrados com outro servidor, que pode ficar na central do cliente ou na nuvem. Com a comunicação disponível, as pesagens concluídas nas unidades alimentam essa base central, mantendo as informações consolidadas atualizadas."
+  },
+  {
+    "id": "hibrida-central",
+    "logicalStart": 85,
+    "logicalEnd": 90,
+    "text": "Você combina a continuidade da pesagem local com uma visão integrada das unidades. A equipe opera junto à balança, enquanto a gestão acompanha as informações reunidas na central."
+  },
+  {
+    "id": "encerramento",
+    "logicalStart": 90,
+    "logicalEnd": 97,
+    "text": "Do local à nuvem, o OWL acompanha a sua operação. SQL Server Express ou MySQL. Cinco arquiteturas para conectar pesagem, informação e gestão. OWL. Tecnologia SIAMAC."
+  }
+]

@@ -1,0 +1,79 @@
+{
+  "version": "0.2.7",
+  "geometry": {
+    "checks": [
+      {
+        "angle": -35,
+        "supportFixed": true,
+        "jointFixed": true,
+        "lensMatches": true,
+        "directionMatches": true
+      },
+      {
+        "angle": -10,
+        "supportFixed": true,
+        "jointFixed": true,
+        "lensMatches": true,
+        "directionMatches": true
+      },
+      {
+        "angle": 0,
+        "supportFixed": true,
+        "jointFixed": true,
+        "lensMatches": true,
+        "directionMatches": true
+      },
+      {
+        "angle": 20,
+        "supportFixed": true,
+        "jointFixed": true,
+        "lensMatches": true,
+        "directionMatches": true
+      },
+      {
+        "angle": 35,
+        "supportFixed": true,
+        "jointFixed": true,
+        "lensMatches": true,
+        "directionMatches": true
+      }
+    ],
+    "wide": 92,
+    "tele": 46.1,
+    "legacy": 54,
+    "widths": [
+      92,
+      78.64816017650914,
+      65.5038202258107,
+      56.90422681859725,
+      46.1
+    ],
+    "detectorMatchesImage": true,
+    "anchorMatches": true,
+    "nativeResolution": {
+      "largura": 2688,
+      "altura": 1520
+    },
+    "originalPitch": -10.20039216969841
+  },
+  "recommended": {
+    "longitudinal": 6,
+    "lateralFromLaneCenter": 2.2,
+    "lensHeight": 2,
+    "focalMm": 8,
+    "angle": 3,
+    "yawToVehicle": 20.136303428248134,
+    "horizontal": 56.90422681859725,
+    "vertical": 34.07189488717033,
+    "conservativeVertical": 31.044588338003415,
+    "inFrame": true,
+    "conservative": true,
+    "plateWidthPixels": 202.30790762238362,
+    "codeHeightPixels": 33.684107328632216,
+    "weightHeightPixels": 15.725249660087178,
+    "cscHeightPixels": 7.663820138765635
+  },
+  "localPreviewWithoutRtsp": true,
+  "persistence": true,
+  "errors": []
+}

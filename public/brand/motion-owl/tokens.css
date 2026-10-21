@@ -1,0 +1,309 @@
+/* =========================================================================
+   SIAMAC — Colors & Type tokens
+   The visual foundations for SIAMAC's brand expression: weighing,
+   automation and industrial software. Engineered for a clean, restrained,
+   "grande empresa" feel built on three logo colors.
+   ========================================================================= */
+
+/* --- Fonts ---------------------------------------------------------------- */
+
+:root {
+  /* ============================================================
+     BRAND COLORS — sampled directly from the SIAMAC logo bars.
+     ============================================================ */
+  --siamac-red:       #800000; /* Top bar  — bordeaux / maroon */
+  --siamac-green:     #018743; /* Mid bar  — emerald            */
+  --siamac-blue:      #004788; /* Bot bar  — deep navy          */
+  --siamac-black:     #0B0F14; /* Wordmark — near-black, warm   */
+
+  /* Brand tints (lighter, for backgrounds, surfaces, badges) */
+  --siamac-red-50:    #F9ECEC;
+  --siamac-red-100:   #F2D6D6;
+  --siamac-red-200:   #E0A3A3;
+  --siamac-red-500:   #B22A2A;
+  --siamac-red-600:   #9A1F1F;
+  --siamac-red-700:   #800000;  /* base */
+  --siamac-red-800:   #5C0000;
+  --siamac-red-900:   #3F0202;
+
+  --siamac-green-50:  #E8F4ED;
+  --siamac-green-100: #C9E6D5;
+  --siamac-green-200: #8FCDA9;
+  --siamac-green-500: #20A360;
+  --siamac-green-600: #099653;
+  --siamac-green-700: #018743;  /* base */
+  --siamac-green-800: #016432;
+  --siamac-green-900: #014523;
+
+  --siamac-blue-50:   #E8EFF7;
+  --siamac-blue-100:  #C8D7EA;
+  --siamac-blue-200:  #88A4CB;
+  --siamac-blue-500:  #1F62A6;
+  --siamac-blue-600:  #0D5497;
+  --siamac-blue-700:  #004788;  /* base */
+  --siamac-blue-800:  #003365;
+  --siamac-blue-900:  #002347;
+
+  /* ============================================================
+     NEUTRALS — graphite scale for UI chrome.
+     Slightly cool to harmonize with navy primary.
+     ============================================================ */
+  --ink-0:    #FFFFFF;
+  --ink-25:   #FAFBFC;
+  --ink-50:   #F4F6F9;
+  --ink-75:   #ECEFF3;
+  --ink-100:  #DDE3EA;
+  --ink-200:  #C2CBD6;
+  --ink-300:  #9AA5B4;
+  --ink-400:  #6E7A8A;
+  --ink-500:  #4E5A6B;
+  --ink-600:  #36404E;
+  --ink-700:  #232A35;
+  --ink-800:  #161B23;
+  --ink-900:  #0B0F14;
+
+  /* ============================================================
+     SEMANTIC ROLES — what UI components should reference.
+     ============================================================ */
+  --color-primary:        var(--siamac-blue-700);
+  --color-primary-hover:  var(--siamac-blue-800);
+  --color-primary-press:  var(--siamac-blue-900);
+  --color-primary-soft:   var(--siamac-blue-50);
+  --color-primary-fg:     #FFFFFF;
+
+  --color-accent:         var(--siamac-red-700); /* sparingly */
+  --color-accent-hover:   var(--siamac-red-800);
+  --color-accent-soft:    var(--siamac-red-50);
+
+  --color-success:        var(--siamac-green-700);
+  --color-success-soft:   var(--siamac-green-50);
+  --color-success-fg:     var(--siamac-green-900);
+
+  --color-warning:        #B4750A;
+  --color-warning-soft:   #FBF1DC;
+  --color-warning-fg:     #5C3B01;
+
+  --color-danger:         var(--siamac-red-700);
+  --color-danger-soft:    var(--siamac-red-50);
+  --color-danger-fg:      var(--siamac-red-900);
+
+  --color-info:           var(--siamac-blue-700);
+  --color-info-soft:      var(--siamac-blue-50);
+  --color-info-fg:        var(--siamac-blue-900);
+
+  /* Surfaces */
+  --bg-page:        var(--ink-50);
+  --bg-surface:     #FFFFFF;
+  --bg-surface-alt: var(--ink-25);
+  --bg-inverse:     var(--ink-900);
+  --bg-overlay:     rgba(11, 15, 20, 0.56);
+
+  /* Foreground (text) */
+  --fg-1:        var(--ink-900); /* headings, primary text */
+  --fg-2:        var(--ink-700); /* body */
+  --fg-3:        var(--ink-500); /* secondary */
+  --fg-4:        var(--ink-400); /* tertiary / muted */
+  --fg-disabled: var(--ink-300);
+  --fg-on-dark:  #FFFFFF;
+  --fg-on-dark-2:#C8D2DE;
+  --fg-link:     var(--siamac-blue-700);
+
+  /* Borders & dividers */
+  --border-subtle: var(--ink-75);
+  --border-1:      var(--ink-100);
+  --border-2:      var(--ink-200);
+  --border-strong: var(--ink-300);
+  --border-focus:  var(--siamac-blue-500);
+
+  /* ============================================================
+     SPACING — 4px base, named scale.
+     ============================================================ */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ============================================================
+     RADII — small, square-leaning. Industrial confidence.
+     Cards/buttons use 6–10px max; SIAMAC is not a "rounded" brand.
+     ============================================================ */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;   /* default for buttons, inputs */
+  --radius-lg: 10px;  /* cards */
+  --radius-xl: 16px;  /* dialogs */
+  --radius-pill: 999px;
+
+  /* ============================================================
+     SHADOWS — soft, blue-tinted. Restrained.
+     ============================================================ */
+  --shadow-1: 0 1px 2px rgba(11, 15, 20, 0.06), 0 1px 1px rgba(11, 15, 20, 0.04);
+  --shadow-2: 0 2px 6px rgba(11, 15, 20, 0.06), 0 4px 12px rgba(11, 15, 20, 0.06);
+  --shadow-3: 0 8px 24px rgba(11, 15, 20, 0.08), 0 2px 6px rgba(11, 15, 20, 0.04);
+  --shadow-4: 0 16px 48px rgba(11, 15, 20, 0.14), 0 4px 12px rgba(11, 15, 20, 0.06);
+  --shadow-inset: inset 0 0 0 1px rgba(11, 15, 20, 0.04);
+  --shadow-focus: 0 0 0 3px rgba(0, 71, 136, 0.22);
+
+  /* ============================================================
+     TYPOGRAPHY
+     Display / brand   → Manrope (geometric, bold, matches wordmark)
+     UI / body         → Inter   (workhorse, legible at small sizes)
+     Numerics / mono   → JetBrains Mono (weighing readouts, IDs, code)
+     ============================================================ */
+  --font-display: "Manrope", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale — modular, tightened for industrial UI density */
+  --fs-3xs: 10px;
+  --fs-2xs: 11px;
+  --fs-xs:  12px;
+  --fs-sm:  13px;
+  --fs-md:  14px;
+  --fs-lg:  16px;
+  --fs-xl:  18px;
+  --fs-2xl: 22px;
+  --fs-3xl: 28px;
+  --fs-4xl: 36px;
+  --fs-5xl: 48px;
+  --fs-6xl: 64px;
+  --fs-7xl: 84px;
+
+  /* Line heights */
+  --lh-tight:   1.1;
+  --lh-snug:    1.25;
+  --lh-normal:  1.5;
+  --lh-relaxed: 1.65;
+
+  /* Tracking */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0em;
+  --tracking-wide:   0.04em;
+  --tracking-mega:   0.14em; /* ALL-CAPS micro-labels (e.g. "PESAGEM") */
+
+  /* Motion */
+  --easing-standard: cubic-bezier(.2,.6,.2,1);
+  --easing-decel:    cubic-bezier(0,.0,.2,1);
+  --easing-accel:    cubic-bezier(.4,0,1,1);
+  --dur-fast:   120ms;
+  --dur-base:   200ms;
+  --dur-slow:   360ms;
+}
+
+/* =========================================================================
+   SEMANTIC TYPE STYLES — apply these to real elements.
+   ========================================================================= */
+
+.t-display-1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-6xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+.t-display-2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-5xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+.t-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-4xl);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+.t-h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-3xl);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+.t-h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+}
+.t-h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-xl);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+}
+.t-body-lg {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--fs-lg);
+  line-height: var(--lh-relaxed);
+  color: var(--fg-2);
+}
+.t-body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--fs-md);
+  line-height: var(--lh-normal);
+  color: var(--fg-2);
+}
+.t-body-sm {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  color: var(--fg-3);
+}
+.t-caption {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--fg-3);
+}
+.t-eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-2xs);
+  line-height: 1;
+  letter-spacing: var(--tracking-mega);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.t-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+.t-readout {
+  /* For weighing values, big numbers */
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--fs-6xl);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--fg-1);
+  font-variant-numeric: tabular-nums;
+}
+.t-link {
+  color: var(--fg-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.t-link:hover { color: var(--color-primary-hover); }

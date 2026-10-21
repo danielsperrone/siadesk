@@ -1,5 +1,6 @@
 import type { PieceInstance, ProjectConfig, CalibrationData, PostePeriferico } from '../types'
-import { CATALOGO } from '../catalog/pieces'
+import { CATALOGO, MODELOS_VEICULO } from '../catalog/pieces'
+import { alturaPoste, posicaoPosteAdicional } from './postes'
 
 // Motor de layout paramétrico.
 //
@@ -44,7 +45,16 @@ function adicionarPerifericosPoste(
 
     pecas.push({
       id: perif.id,
+      posteId: idPoste,
       tipo: perif.tipo,
+      estadoSemaforo: perif.estadoSemaforo,
+      mensagemDisplay: perif.mensagemDisplay,
+      velocidadeDisplay: perif.velocidadeDisplay,
+      displayTcp: perif.displayTcp,
+      canalSemaforo: perif.canalSemaforo,
+      canalSensor: perif.canalSensor,
+      leitor: perif.leitor,
+      cameraRtsp: perif.cameraRtsp,
       rotulo: `${nomeEquipamento} — ${idPoste.toUpperCase()}`,
       posicao: [xPoste, perif.altura, zPoste],
       rotacaoY: rotacaoRadianos,
@@ -69,12 +79,14 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
 
   // Veículo opcional (caminhão ilustrativo)
   if (cfg.mostrarVeiculo) {
+    const alturaCalibrada = calibracoes.veiculo?.altura ?? 0.55
     pecas.push({
       id: 'veiculo',
       tipo: 'veiculo',
-      rotulo: 'Caminhão (ilustrativo)',
-      posicao: [0, 0.55, 0],
-      rotacaoY: 0,
+      modelo: MODELOS_VEICULO[cfg.modeloVeiculo === 'container' ? 'container' : 'padrao'].modelo,
+      rotulo: cfg.modeloVeiculo === 'container' ? 'Caminhão com contêiner SIAMAC' : 'Caminhão (ilustrativo)',
+      posicao: [cfg.offsetVeiculoX ?? 0, alturaCalibrada, 0],
+      rotacaoY: cfg.veiculoInvertido ? Math.PI : 0,
     })
   }
 
@@ -259,6 +271,33 @@ export function gerarLayout(cfg: ProjectConfig, calibracoes: Record<string, Cali
       rotacaoY: 0,
     })
     adicionarPerifericosPoste(pecas, 'siap09', xPoste, zPoste, cfg.perifericosSiap09 ?? [], calibracoes, false)
+  }
+
+  // Alturas independentes dos nove postes padrão; a base permanece no chão.
+  for (const peca of pecas) {
+    const match = peca.id.match(/^poste-(siap0[1-9])$/)
+    if (match) {
+      peca.posteId = match[1]
+      peca.estruturaPoste = { altura: alturaPoste(cfg, match[1]) }
+      peca.rotulo = `Poste ${peca.estruturaPoste.altura} m — ${match[1].toUpperCase()}`
+    }
+  }
+  for (const poste of cfg.postesAdicionais ?? []) {
+    const { x, z, zNegativo, zPositivo } = posicaoPosteAdicional(cfg, poste)
+    const altura = alturaPoste(cfg, poste.id)
+    pecas.push({ id: `poste-${poste.id}`, posteId: poste.id,
+      tipo: poste.tipo === 'trave' ? 'poste-trave' : 'poste-3m', rotulo: poste.nome,
+      posicao: [x, 0, poste.tipo === 'trave' ? (zNegativo + zPositivo) / 2 : z], rotacaoY: 0,
+      estruturaPoste: { altura, ...(poste.tipo === 'trave' ? { largura: zPositivo - zNegativo } : {}) },
+    })
+    for (const perif of poste.perifericos) {
+      const superior = poste.tipo === 'trave' && perif.montagem === 'barra-superior'
+      const zEquip = poste.tipo === 'simples' ? z : superior ? perif.deslocamentoBarra ?? 0
+        : perif.montagem === 'coluna-positiva' ? zPositivo : zNegativo
+      adicionarPerifericosPoste(pecas, poste.nome, x, zEquip,
+        [{ ...perif, altura: superior ? altura : Math.min(perif.altura, altura) }], calibracoes, false)
+      pecas[pecas.length - 1].posteId = poste.id
+    }
   }
 
   // --- Painéis centrais (SIAMAC e Som) ---------------------------------------

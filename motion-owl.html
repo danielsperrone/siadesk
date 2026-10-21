@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OWL — Toda passagem deixa um registro</title>
+    <link rel="stylesheet" href="./brand/motion-owl/tokens.css" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: #e8eff7; }
+      body { display: grid; place-content: center; font-family: Manrope, sans-serif; }
+      canvas#motion { display: block; width: min(100vw, 177.7778vh); height: auto; }
+      body.square canvas#motion { width: min(100vw, 100vh); }
+      body.reels canvas#motion { width: min(100vw, 56.25vh); }
+      body.feed canvas#motion { width: min(100vw, 80vh); }
+      .controls { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; padding: 10px 16px; background: #fff; border: 1px solid #dde3ea; border-radius: 6px; }
+      button { font: inherit; color: #004788; border: 0; background: transparent; cursor: pointer; }
+      button:focus-visible, input:focus-visible { outline: 2px solid #004788; outline-offset: 4px; }
+      input { width: 260px; accent-color: #004788; }
+      select { font: inherit; color: #004788; background: #fff; border: 1px solid #dde3ea; padding: 4px; border-radius: 4px; }
+      body.render .controls { display: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="motion" width="1920" height="1080" aria-label="Motion OWL: passagem sem ticket, alerta de fraude, relatório de auditoria e aviso por e-mail"></canvas>
+    <div class="controls"><button id="play" type="button">Reproduzir</button><input id="seek" aria-label="Posição no vídeo" type="range" min="0" max="34" step="0.01" value="0" /><output id="time">0:00 / 0:34</output><button id="restart" type="button">Reiniciar</button><select id="format" aria-label="Proporção"><option value="landscape">16:9</option><option value="square">1:1</option><option value="reels">Instagram Reels / Stories — 9:16</option><option value="feed">Instagram feed — 4:5</option></select></div>
+    <script type="module" src="/src/motion/owl-motion.ts"></script>
+  </body>
+</html>

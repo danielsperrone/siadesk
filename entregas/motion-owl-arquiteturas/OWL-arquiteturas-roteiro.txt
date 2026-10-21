@@ -1,0 +1,35 @@
+OWL — Arquiteturas e bancos de dados
+Narração em português brasileiro
+
+00:00:00.000 — bancos
+O OWL, da SIAMAC, acompanha a estrutura da sua operação. O sistema pode utilizar SQL Server Express ou MySQL como banco de dados. E você pode organizar essa estrutura de cinco formas: local, local com servidor, centralizada, em nuvem ou híbrida.
+
+00:00:15.400 — pesagem
+Antes de conhecer as arquiteturas, entenda o papel dos computadores. O computador de pesagem é aquele que se conecta fisicamente à balança, recebe a indicação de peso e executa a operação no OWL. Ele é o ponto de trabalho de quem realiza a pesagem.
+
+00:00:29.267 — clientes
+Já os computadores clientes permitem visualizar as pesagens, emitir relatórios e gerenciar as informações. Assim, outras pessoas podem acompanhar a operação e cuidar da gestão a partir dos seus próprios computadores, acessando os dados da estrutura escolhida.
+
+00:00:44.200 — local
+Na arquitetura local, o banco de dados fica instalado no mesmo computador que executa o sistema de pesagem. O OWL e os registros da operação ficam juntos. É uma estrutura concentrada em um único computador, junto à balança.
+
+00:00:56.900 — local-servidor
+Na arquitetura local com servidor, o banco de dados fica em outro computador, dentro da mesma rede. O computador da balança realiza a pesagem e acessa esse servidor pela rede local. Os computadores clientes também podem acessar essa estrutura.
+
+00:01:10.467 — centralizado
+Na arquitetura centralizada, existe um único banco de dados na central do cliente. Cada unidade se conecta diretamente a esse servidor, pela infraestrutura de rede e por uma VPN. As informações ficam reunidas na central, e o acesso das unidades depende da conexão com esse ambiente.
+
+00:01:26.067 — nuvem
+Na arquitetura em nuvem, o conceito é semelhante, mas o servidor fica hospedado na nuvem, em vez de estar em uma instalação do cliente. As unidades acessam esse ambiente pela conexão de rede configurada. O banco permanece centralizado, agora em uma infraestrutura hospedada.
+
+00:01:40.967 — hibrida-local
+Na arquitetura híbrida, cada unidade possui seu próprio servidor local. Os computadores de pesagem usam o banco da própria unidade. Por isso, a operação local não depende da internet para realizar as pesagens, mesmo quando a conexão com a central está indisponível.
+
+00:01:55.367 — hibrida-integracao
+Ao finalizar cada pesagem, os dados são integrados com outro servidor, que pode ficar na central do cliente ou na nuvem. Com a comunicação disponível, as pesagens concluídas nas unidades alimentam essa base central, mantendo as informações consolidadas atualizadas.
+
+00:02:10.333 — hibrida-central
+Você combina a continuidade da pesagem local com uma visão integrada das unidades. A equipe opera junto à balança, enquanto a gestão acompanha as informações reunidas na central.
+
+00:02:20.200 — encerramento
+Do local à nuvem, o OWL acompanha a sua operação. SQL Server Express ou MySQL. Cinco arquiteturas para conectar pesagem, informação e gestão. OWL. Tecnologia SIAMAC.

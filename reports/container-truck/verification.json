@@ -1,0 +1,25 @@
+{
+  "dataLocal": "2026-10-18",
+  "versao": "0.2.6",
+  "buildFrontend": "npm run build: aprovado",
+  "testesExistentes": {
+    "falhas": 0,
+    "aprovados": 15
+  },
+  "testeContainer": "node tools/test-container-truck.mjs: aprovado",
+  "vedacao": {
+    "frestas": 0,
+    "amostras": 63
+  },
+  "legibilidade": {
+    "amostras": 3066,
+    "angulosGraus": [
+      -15,
+      0,
+      15
+    ],
+    "sobreposicoes": 0
+  },
+  "instalacao": "SIADESK 0.2.6 instalado no destino do atalho e aprovado em perfil isolado. EXE e app.asar conferidos por SHA256; modelo, movimento, inversão, seletor e JSON salvo aprovados.",
+  "testePacote": "0.2.6: aprovado em perfil isolado; GLB, seletor, movimento, inversão e JSON salvo."
+}

@@ -1,0 +1,15 @@
+{
+  "version": "0.2.6",
+  "executable": "D:\\Projetos\\siadesk\\dist-packaged\\win-unpacked\\SIADESK.exe",
+  "packaged": true,
+  "installed": true,
+  "isolatedProfile": true,
+  "modelHash": "133cfd8113efb192eff8fbbd0c3e63f8dc31921953bc643dfba3485f2822d4ef",
+  "selector": true,
+  "glbLoaded": true,
+  "movement": true,
+  "inversion": true,
+  "savedJson": true,
+  "switchBack": true,
+  "errors": []
+}

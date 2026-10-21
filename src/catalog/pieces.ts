@@ -1,4 +1,13 @@
-import type { PieceType, PieceTypeId } from '../types'
+import type { PieceInstance, PieceType, PieceTypeId } from '../types'
+
+export const MODELOS_VEICULO = {
+  padrao: { nome: 'Caminhão padrão', modelo: 'veiculo' },
+  container: { nome: 'Caminhão com contêiner SIAMAC', modelo: 'veiculo-container' },
+} as const
+
+export function modeloDaPeca(peca: PieceInstance) {
+  return peca.modelo ?? CATALOGO[peca.tipo].modelo
+}
 
 // Catálogo de peças. O campo `modelo` aponta para public/models/<modelo>.glb —
 // os GLBs são gerados a partir dos FBX do SketchUp por `npm run modelos`.
@@ -60,6 +69,16 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
     placeholder: [0.26, 0.2, 0.3],
     cor: '#3498db',
   },
+  'refletor-frontal': {
+    id: 'refletor-frontal', nome: 'Refletor frontal',
+    descricao: 'Refletor LED fixado ao poste, direcionado para a área de visão da câmera',
+    modelo: 'refletor-frontal', placeholder: [0.21, 0.15, 0.15], cor: '#e8c547',
+  },
+  'refletor-poste': {
+    id: 'refletor-poste', nome: 'Refletor tipo poste (para baixo)',
+    descricao: 'Luminária LED com braço de poste e iluminação voltada para baixo',
+    modelo: 'refletor-poste', placeholder: [1.05, 0.25, 0.34], cor: '#e8c547',
+  },
   'camera-ocr': {
     id: 'camera-ocr',
     nome: 'Câmera OCR',
@@ -99,6 +118,11 @@ export const CATALOGO: Record<PieceTypeId, PieceType> = {
     modelo: 'poste-3m',
     placeholder: [0.25, 3.0, 0.25],
     cor: '#7f8c8d',
+  },
+  'poste-trave': {
+    id: 'poste-trave', nome: 'Poste trave',
+    descricao: 'Portal com duas colunas e barra superior para câmeras e iluminação',
+    modelo: 'poste-trave', placeholder: [0.25, 6, 5], cor: '#7f8c8d',
   },
   'poste-6m': {
     id: 'poste-6m',

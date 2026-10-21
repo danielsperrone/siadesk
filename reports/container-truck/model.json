@@ -1,0 +1,41 @@
+{
+  "source": "public/models/veiculo.glb",
+  "output": "public/models/veiculo-container.glb",
+  "before": {
+    "min": [
+      -6.9263994140625,
+      -4.882812376649781e-9,
+      -1.1401584472656252
+    ],
+    "max": [
+      6.926399414062498,
+      3.2048195190429687,
+      1.140158447265625
+    ]
+  },
+  "after": {
+    "min": [
+      -6.9263994140625,
+      -4.882812376649781e-9,
+      -1.1401584472656252
+    ],
+    "max": [
+      6.926399414062498,
+      3.1907598972320557,
+      1.140158447265625
+    ]
+  },
+  "wheels": 10,
+  "removedTriangles": 631,
+  "container": {
+    "length": 10.48512,
+    "width": 2.09668,
+    "height": 2.22826,
+    "uniformScale": 0.86,
+    "isoType": "42G1",
+    "identification": "SIAU 634601 2",
+    "illustrative": true
+  },
+  "bytes": 13151176,
+  "markingsReference": "https://www.bic-code.org/marking-of-containers/"
+}

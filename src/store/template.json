@@ -199,6 +199,7 @@
   "cabinePesagem": false,
   "lacosIndutivos": false,
   "mostrarVeiculo": false,
+  "offsetVeiculoX": 0,
   "inverterLateralEntrada": false,
   "inverterLateralSaida": false,
   "distanciaPainelAutomacao": 10,

@@ -1,0 +1,127 @@
+1
+00:00:00,650 --> 00:00:03,912
+O OWL, da SIAMAC, acompanha a estrutura da sua operação.
+
+2
+00:00:03,912 --> 00:00:08,487
+O sistema pode utilizar SQL Server Express ou MySQL como banco de dados.
+
+3
+00:00:08,487 --> 00:00:14,884
+E você pode organizar essa estrutura de cinco formas: local, local com servidor, centralizada, em nuvem ou híbrida.
+
+4
+00:00:15,680 --> 00:00:19,291
+Antes de conhecer as arquiteturas, entenda o papel dos computadores.
+
+5
+00:00:19,291 --> 00:00:25,885
+O computador de pesagem é aquele que se conecta fisicamente à balança, recebe a indicação de peso e executa a operação no OWL.
+
+6
+00:00:25,885 --> 00:00:28,753
+Ele é o ponto de trabalho de quem realiza a pesagem.
+
+7
+00:00:29,547 --> 00:00:35,503
+Já os computadores clientes permitem visualizar as pesagens, emitir relatórios e gerenciar as informações.
+
+8
+00:00:35,503 --> 00:00:43,699
+Assim, outras pessoas podem acompanhar a operação e cuidar da gestão a partir dos seus próprios computadores, acessando os dados da estrutura escolhida.
+
+9
+00:00:44,480 --> 00:00:50,146
+Na arquitetura local, o banco de dados fica instalado no mesmo computador que executa o sistema de pesagem.
+
+10
+00:00:50,146 --> 00:00:52,944
+O OWL e os registros da operação ficam juntos.
+
+11
+00:00:52,944 --> 00:00:56,392
+É uma estrutura concentrada em um único computador, junto à balança.
+
+12
+00:00:57,180 --> 00:01:02,497
+Na arquitetura local com servidor, o banco de dados fica em outro computador, dentro da mesma rede.
+
+13
+00:01:02,497 --> 00:01:06,677
+O computador da balança realiza a pesagem e acessa esse servidor pela rede local.
+
+14
+00:01:06,677 --> 00:01:09,939
+Os computadores clientes também podem acessar essa estrutura.
+
+15
+00:01:10,747 --> 00:01:14,984
+Na arquitetura centralizada, existe um único banco de dados na central do cliente.
+
+16
+00:01:14,984 --> 00:01:20,035
+Cada unidade se conecta diretamente a esse servidor, pela infraestrutura de rede e por uma VPN.
+
+17
+00:01:20,035 --> 00:01:25,561
+As informações ficam reunidas na central, e o acesso das unidades depende da conexão com esse ambiente.
+
+18
+00:01:26,347 --> 00:01:33,231
+Na arquitetura em nuvem, o conceito é semelhante, mas o servidor fica hospedado na nuvem, em vez de estar em uma instalação do cliente.
+
+19
+00:01:33,231 --> 00:01:36,842
+As unidades acessam esse ambiente pela conexão de rede configurada.
+
+20
+00:01:36,842 --> 00:01:40,464
+O banco permanece centralizado, agora em uma infraestrutura hospedada.
+
+21
+00:01:41,247 --> 00:01:44,811
+Na arquitetura híbrida, cada unidade possui seu próprio servidor local.
+
+22
+00:01:44,811 --> 00:01:47,864
+Os computadores de pesagem usam o banco da própria unidade.
+
+23
+00:01:47,864 --> 00:01:54,865
+Por isso, a operação local não depende da internet para realizar as pesagens, mesmo quando a conexão com a central está indisponível.
+
+24
+00:01:55,647 --> 00:02:02,067
+Ao finalizar cada pesagem, os dados são integrados com outro servidor, que pode ficar na central do cliente ou na nuvem.
+
+25
+00:02:02,067 --> 00:02:09,822
+Com a comunicação disponível, as pesagens concluídas nas unidades alimentam essa base central, mantendo as informações consolidadas atualizadas.
+
+26
+00:02:10,613 --> 00:02:15,025
+Você combina a continuidade da pesagem local com uma visão integrada das unidades.
+
+27
+00:02:15,025 --> 00:02:19,692
+A equipe opera junto à balança, enquanto a gestão acompanha as informações reunidas na central.
+
+28
+00:02:20,480 --> 00:02:23,301
+Do local à nuvem, o OWL acompanha a sua operação.
+
+29
+00:02:23,301 --> 00:02:26,030
+SQL Server Express ou MySQL.
+
+30
+00:02:26,030 --> 00:02:29,501
+Cinco arquiteturas para conectar pesagem, informação e gestão.
+
+31
+00:02:29,501 --> 00:02:29,977
+OWL.
+
+32
+00:02:29,977 --> 00:02:31,196
+Tecnologia SIAMAC.

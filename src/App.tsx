@@ -1,3 +1,9 @@
+import { alturaPoste as obterAlturaPoste, itensAdicionaisFornecidos } from './layout/postes'
+import { requestSave, confirmLeave, openLocalProject } from './projects/commands'
+import { SiadeskBrand } from './components/SiadeskBrand'
+import { useSession } from './cloud/session'
+import { IndicadorPeso } from './simulator/InterfaceBalanca'
+import { ModoApresentacao } from './simulator/ModoApresentacao'
 import { useState, useRef, useEffect } from 'react'
 import { ConfigPanel } from './components/ConfigPanel'
 import { Scene } from './components/Scene'
@@ -7,8 +13,10 @@ import ExcelJS from 'exceljs'
 import { gerarLayout } from './layout/engine'
 import { CATALOGO } from './catalog/pieces'
 import type { ProjectConfig, PostePeriferico } from './types'
+import { abrirEtiquetas, criarProjetoEtiquetas } from './labels/project-labels'
 
 export default function App() {
+  const canCalibrate = useSession(s => !!s.user?.admin)
   const [mostrarRotulos, setMostrarRotulos] = useState(() => {
     return localStorage.getItem('siadesk-mostrar-rotulos') !== 'false'
   })
@@ -50,6 +58,8 @@ export default function App() {
   const projetoAtivo = useProject((s) => s.projetoAtivo)
   const config = useProject((s) => s.config)
   const abaAtiva = useProject((s) => s.abaAtiva)
+  const modoApresentacao = useProject(s => s.modoApresentacao)
+  const setModoApresentacao = useProject(s => s.setModoApresentacao)
   const setAbaAtiva = useProject((s) => s.setAbaAtiva)
   const criarNovoProjeto = useProject((s) => s.criarNovoProjeto)
   const abrirProjeto = useProject((s) => s.abrirProjeto)
@@ -57,13 +67,19 @@ export default function App() {
   const projetosRecentes = useProject((s) => s.projetosRecentes)
   const excluirProjetoRecente = useProject((s) => s.excluirProjetoRecente)
   const isDirty = useProject((s) => s.isDirty)
-  const salvarConfig = useProject((s) => s.salvarConfig)
 
   // Estados para emissão do PDF
   const [gerandoPDF, setGerandoPDF] = useState(false)
   const [pdfData, setPdfData] = useState<{ dataEmissao: Date; codigoDocumento: string; tipoDocumento?: 'tecnico' | 'instalacao' | 'compra' | 'picklist' } | null>(null)
   const calibracoes = useProject((s) => s.calibracoes)
   const [dropdownAberto, setDropdownAberto] = useState(false)
+
+  const handleEtiquetas = async () => {
+    setDropdownAberto(false)
+    try {
+      await abrirEtiquetas(criarProjetoEtiquetas(config, gerarLayout(config, calibracoes)))
+    } catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível abrir as etiquetas.') }
+  }
 
 
   const handleCriar = (e: React.FormEvent) => {
@@ -88,7 +104,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(event.target?.result as string)
         if (parsed.nomeProjeto !== undefined && parsed.cliente !== undefined) {
-          abrirProjeto(parsed)
+          openLocalProject(parsed)
         } else {
           alert('Arquivo JSON inválido. Verifique se é um projeto SIADESK.')
         }
@@ -103,25 +119,15 @@ export default function App() {
     }
   }
 
-  const handleSalvar = () => {
-    const configAtualizada = salvarConfig()
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(configAtualizada, null, 2))
-    const downloadAnchor = document.createElement('a')
-    downloadAnchor.setAttribute("href", dataStr)
-    const filename = `${configAtualizada.nomeProjeto.toLowerCase().replace(/\s+/g, '-') || 'projeto'}-${configAtualizada.codigoProposta || 'proposta'}.json`
-    downloadAnchor.setAttribute("download", filename)
-    document.body.appendChild(downloadAnchor)
-    downloadAnchor.click()
-    downloadAnchor.remove()
-  }
+  const handleSalvar = () => requestSave()
 
-  const handleEmitirPDF = () => {
+  const handleEmitirPDF = async () => {
     if (isDirty) {
       const querSalvar = window.confirm(
         'Você possui alterações não salvas no projeto. Para emitir o PDF, o projeto precisa ser salvo antes.\n\nDeseja salvar as alterações agora?'
       )
       if (querSalvar) {
-        handleSalvar()
+        if (!await handleSalvar()) return
         setTimeout(() => {
           iniciarFluxoPDF()
         }, 800)
@@ -142,7 +148,9 @@ export default function App() {
       'camera-ocr',
       'leitor-rfid',
       'display-mensagens',
-      'painel-automacao'
+      'painel-automacao',
+      'painel-som',
+      'balanca'
     ]
     
     const pecasIP = pecas.filter(p => tiposEquipamentosIP.includes(p.tipo))
@@ -226,7 +234,8 @@ export default function App() {
 
     // 4. Linhas de dados (Display de mensagens é Ethernet RJ45, sem PoE)
     const rows: any[][] = pecasIP.map((p, idx) => {
-      const nome = CATALOGO[p.tipo]?.nome || 'Equipamento'
+      const saved=config.etiquetas?.equipamentos.find(e=>e.id===p.id)
+      const nome = saved?.nome || CATALOGO[p.tipo]?.nome || 'Equipamento'
       let local = 'Central de Comando'
       if (p.rotulo.includes(' — ')) {
         local = p.rotulo.split(' — ')[1]
@@ -246,6 +255,8 @@ export default function App() {
         : p.tipo === 'leitor-rfid' ? 'Leitor de Antena RFID'
         : p.tipo === 'display-mensagens' ? 'Display de Mensagens de LED'
         : p.tipo === 'painel-automacao' ? 'Painel de Automação SIAMAC'
+        : p.tipo === 'painel-som' ? 'Painel de Som'
+        : p.tipo === 'balanca' ? 'Balança rodoviária'
         : 'Equipamento'
         
       return [
@@ -254,11 +265,11 @@ export default function App() {
         desc,
         local,
         conexao,
-        '', // IP
+        saved?.ip || '', // IP
         '', // Máscara
         '', // Gateway
-        '', // Usuário
-        '', // Senha
+        p.tipo==='balanca'?'não se aplica':saved?.username||'',
+        p.tipo==='balanca'?'não se aplica':saved?.password||'',
         ''  // Observações
       ]
     })
@@ -690,6 +701,12 @@ export default function App() {
       }
     })
 
+    for (const poste of config.postesAdicionais ?? []) {
+      drawSectionHeader(poste.nome)
+      drawChecklistItem(poste.nome, `A estrutura está fixada ao chão, aprumada e com a altura prevista de ${poste.altura} m?`)
+      for (const p of poste.perifericos) drawChecklistItem(poste.nome, `${CATALOGO[p.tipo].nome}: fixação, cabeamento, orientação e funcionamento conferidos a ${p.montagem === 'barra-superior' ? poste.altura : p.altura} m de altura?`)
+    }
+
     // --- GRUPO 2: CANCELAS ---
     if (config.cancelaEntrada || config.cancelaSaida || config.rfidEntrada || config.rfidSaida) {
       if (config.cancelaEntrada) {
@@ -900,7 +917,7 @@ export default function App() {
 
         // Poste em si
         if (isPosteAtivo && isPosteFornecido) {
-          const alturaPoste = siapNum === '04' || siapNum === '08' ? '1.5m' : (siapNum === '09' ? '6m' : '3m')
+          const alturaPoste = `${obterAlturaPoste(config, `siap${siapNum}`)}m`
           adicionarAoGrupo(`Poste SIAP (${alturaPoste})`, `Poste de sustentação metálico galvanizado de ${alturaPoste}`)
         }
 
@@ -920,6 +937,11 @@ export default function App() {
           }
         }
       })
+
+      for (const item of itensAdicionaisFornecidos(config)) {
+        const equipamento = Object.values(CATALOGO).find(p => p.id === item.nome)
+        adicionarAoGrupo(equipamento?.nome ?? item.nome, equipamento?.descricao ?? item.descricao)
+      }
 
       // 4. Equipamentos Adicionais
       if (config.equipamentosAdicionais && config.equipamentosAdicionais.length > 0) {
@@ -1172,7 +1194,7 @@ export default function App() {
 
         // Poste em si
         if (isPosteAtivo && isPosteFornecido) {
-          const alturaPoste = siapNum === '04' || siapNum === '08' ? '1.5m' : (siapNum === '09' ? '6m' : '3m')
+          const alturaPoste = `${obterAlturaPoste(config, `siap${siapNum}`)}m`
           adicionarAoGrupo(`Poste SIAP (${alturaPoste})`, `Poste de sustentação metálico galvanizado de ${alturaPoste}`)
         }
 
@@ -1192,6 +1214,11 @@ export default function App() {
           }
         }
       })
+
+      for (const item of itensAdicionaisFornecidos(config)) {
+        const equipamento = Object.values(CATALOGO).find(p => p.id === item.nome)
+        adicionarAoGrupo(equipamento?.nome ?? item.nome, equipamento?.descricao ?? item.descricao)
+      }
 
       // 4. Equipamentos Adicionais
       if (config.equipamentosAdicionais && config.equipamentosAdicionais.length > 0) {
@@ -1330,6 +1357,10 @@ export default function App() {
           }
         })
       })
+      for (const poste of config.postesAdicionais ?? []) for (const p of poste.perifericos) {
+        if (p.tipo === tipo && p.fornecimentoSiamac !== false) instancias.push({ tipo: p.tipo, poste: poste.nome,
+          altura: p.montagem === 'barra-superior' ? poste.altura : p.altura })
+      }
       return instancias
     }
 
@@ -1729,13 +1760,13 @@ export default function App() {
     setGerandoPDF(true)
   }
 
-  const handleEmitirChecklistPDF = () => {
+  const handleEmitirChecklistPDF = async () => {
     if (isDirty) {
       const querSalvar = window.confirm(
         'Você possui alterações não salvas no projeto. Para emitir o PDF do Checklist, o projeto precisa ser salvo antes.\n\nDeseja salvar as alterações agora?'
       )
       if (querSalvar) {
-        handleSalvar()
+        if (!await handleSalvar()) return
         setTimeout(() => {
           iniciarFluxoPDF('instalacao')
         }, 800)
@@ -1745,13 +1776,13 @@ export default function App() {
     }
   }
 
-  const handleEmitirListaCompraPDF = () => {
+  const handleEmitirListaCompraPDF = async () => {
     if (isDirty) {
       const querSalvar = window.confirm(
         'Você possui alterações não salvas no projeto. Para emitir a Lista de Compra, o projeto precisa ser salvo antes.\n\nDeseja salvar as alterações agora?'
       )
       if (querSalvar) {
-        handleSalvar()
+        if (!await handleSalvar()) return
         setTimeout(() => {
           iniciarFluxoPDF('compra')
         }, 800)
@@ -1761,13 +1792,13 @@ export default function App() {
     }
   }
 
-  const handleEmitirPicklistPDF = () => {
+  const handleEmitirPicklistPDF = async () => {
     if (isDirty) {
       const querSalvar = window.confirm(
         'Você possui alterações não salvas no projeto. Para emitir o Picklist, o projeto precisa ser salvo antes.\n\nDeseja salvar as alterações agora?'
       )
       if (querSalvar) {
-        handleSalvar()
+        if (!await handleSalvar()) return
         setTimeout(() => {
           iniciarFluxoPDF('picklist')
         }, 800)
@@ -1816,7 +1847,7 @@ export default function App() {
     return (
       <div className="tela-inicio">
         <div className="inicio-header">
-          <h1>SIADESK</h1>
+          <h1><SiadeskBrand /></h1>
           <p className="sub">Dimensionador de Automação de Balança Rodoviária</p>
         </div>
 
@@ -1927,11 +1958,11 @@ export default function App() {
 
   // --- Renderização da Interface Principal com Menu Superior ---
   return (
-    <div className="app-container">
+    <div className={`app-container${modoApresentacao ? ' modo-apresentacao' : ''}`}>
       {/* Menu Superior Horizontal */}
       <header className="menu-superior">
         <div className="logo-superior">
-          <h2>SIADESK</h2>
+          <h2><SiadeskBrand compact /></h2>
           <span>{config.nomeProjeto}</span>
           {isDirty && <span className="status-dirty">Não Salvo</span>}
         </div>
@@ -1950,20 +1981,38 @@ export default function App() {
             🛢️ Equipamentos
           </button>
           <button
+            disabled={!canCalibrate}
+            title={canCalibrate ? 'Calibrar equipamentos' : 'Disponível para administradores do SIASGL'}
             className={abaAtiva === 'calibracao' ? 'active' : ''}
             onClick={() => setAbaAtiva('calibracao')}
           >
             ⚙️ Calibrar
           </button>
+          <button
+            className={abaAtiva === 'cenas' ? 'active' : ''}
+            onClick={() => setAbaAtiva('cenas')}
+          >
+            🎬 Cenas
+          </button>
+          <button
+            className={abaAtiva === 'funcoes_especiais' ? 'active' : ''}
+            onClick={() => setAbaAtiva('funcoes_especiais')}
+          >
+            ✨ Funções Especiais
+          </button>
         </nav>
 
         <div className="acoes-superiores">
+          <button type="button" className="btn-apresentacao" title="Apresentar o 3D sem menus. R e V alternam vazio e carregado; Esc sai." onClick={() => { setDropdownAberto(false); setModoApresentacao(true) }}>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 4h18v12H3zM12 16v5M8 21h8" /><path d="m10 7 5 3-5 3z" /></svg>
+            Modo de apresentação
+          </button>
           <button 
             className="btn-principal" 
             style={{ padding: '7px 14px', fontSize: '12px', marginTop: 0 }}
             onClick={handleSalvar}
           >
-            💾 Salvar Projeto (.json)
+            💾 Salvar Projeto
           </button>
           <div className="dropdown-emitir" style={{ position: 'relative', display: 'inline-block' }}>
             <button 
@@ -1989,6 +2038,7 @@ export default function App() {
                   }}
                 />
                 <div className="dropdown-menu-emitir" style={{ zIndex: 1000 }}>
+                  <button onClick={handleEtiquetas}>Etiquetas do projeto (NIIMBOT B1)</button>
                   <button onClick={() => { setDropdownAberto(false); handleEmitirPDF(); }}>
                     📄 Relatório Técnico (PDF)
                   </button>
@@ -2019,7 +2069,7 @@ export default function App() {
           </div>
           <button 
             className="btn-sair"
-            onClick={fecharProjeto}
+            onClick={async () => { if (await confirmLeave()) fecharProjeto() }}
           >
             Sair
           </button>
@@ -2063,13 +2113,15 @@ export default function App() {
               />
               Mostrar grama
             </label>
+            <IndicadorPeso />
           </div>
           <Scene
-            mostrarRotulos={mostrarRotulos}
-            mostrarGrades={mostrarGrades}
+            mostrarRotulos={!modoApresentacao && mostrarRotulos}
+            mostrarGrades={!modoApresentacao && mostrarGrades}
             mostrarPista={mostrarPista}
             mostrarGrama={mostrarGrama}
           />
+          {modoApresentacao && <ModoApresentacao />}
         </main>
       </div>
     </div>

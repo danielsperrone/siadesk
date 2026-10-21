@@ -1,0 +1,19 @@
+.painel-cameras { min-width: 0; }
+.painel-cameras h3 { margin: 0 0 10px; font-size: 15px; }
+.painel-cameras select { display: block; width: 100%; min-width: 0; min-height: 36px; margin-top: 6px; padding: 6px; border: 1px solid #526271; border-radius: 6px; background: #141b22; color: #e6edf3; font: inherit; font-size: 12px; }
+.cameras-opcoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cameras-endereco { display: flex; gap: 8px; min-width: 0; }
+.cameras-endereco input { min-width: 0; flex: 1; width: 100%; }
+.cameras-endereco input[readonly] { font-family: monospace; font-size: 12px; }
+.cameras-endereco button { flex: none; }
+.camera-config h4 { margin: 0 0 12px; }
+.camera-opcoes-comuns { margin: 16px 0; }
+.camera-opcoes-comuns summary { cursor: pointer; padding: 8px 0; }
+.camera-preview { display: block; width: 100%; height: auto; object-fit: contain; border-radius: 4px; margin-top: 12px; background: #111; }
+.camera-config .cameras-endereco input[type=number] { padding: 7px 9px; border: 1px solid #526271; border-radius: 6px; color: #e6edf3; background: #141b22; font: inherit; }
+.camera-config a { color: #8bcbff; }
+.camera-config :is(input, select, button, summary, a):focus-visible { outline: 2px solid #8bcbff; outline-offset: 2px; }
+.painel-cameras button { min-height: 34px; }
+.painel-cameras input[type=range] { width: 100%; }
+.painel-cameras .clp-error { overflow-wrap: anywhere; }
+@media (max-width: 420px) { .cameras-opcoes { grid-template-columns: 1fr; } }

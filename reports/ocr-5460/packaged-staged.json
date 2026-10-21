@@ -1,0 +1,24 @@
+{
+  "version": "0.2.7",
+  "executable": "D:\\Projetos\\siadesk\\dist-ocr-027-build\\win-unpacked\\SIADESK.exe",
+  "installed": false,
+  "packaged": true,
+  "isolatedProfile": true,
+  "rtsp4mp": true,
+  "width": 2688,
+  "height": 1520,
+  "fps": 0.676,
+  "preview": true,
+  "liveOpticalChanges": true,
+  "savedJson": true,
+  "cleanShutdown": true,
+  "before": {
+    "bytes": 30312,
+    "hash": "ad3a5d9aa0e4cec398f16719296118876124f128b34b5252ac11c8efa11e5f6c"
+  },
+  "after": {
+    "bytes": 30388,
+    "hash": "98353d349d6cd00eaee985b020d413887904ba5e04f1d5eec24c0e5abe50b637"
+  },
+  "errors": []
+}

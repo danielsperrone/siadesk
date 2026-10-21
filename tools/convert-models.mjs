@@ -93,7 +93,11 @@ async function main() {
   }
 
   const arquivos = listarRecursivo(ENTRADA)
-  const modelos = arquivos.filter((f) => EXTENSOES_MODELO.has(path.extname(f).toLowerCase()))
+  const somente = new Set(process.argv.slice(2).map((nome) => nome.toLowerCase()))
+  const modelos = arquivos.filter((f) =>
+    EXTENSOES_MODELO.has(path.extname(f).toLowerCase()) &&
+    (somente.size === 0 || somente.has(path.basename(f, path.extname(f)).toLowerCase())),
+  )
   const imagens = arquivos.filter((f) => EXTENSOES_IMAGEM.has(path.extname(f).toLowerCase()))
 
   if (modelos.length === 0) {
@@ -108,6 +112,15 @@ async function main() {
   for (const modelo of modelos) {
     const nome = path.basename(modelo, path.extname(modelo)).toLowerCase()
     try {
+      // Modelos revisados no SketchUp podem ter um GLB canônico para preservar
+      // relevos e materiais sem regressão para uma exportação FBX anterior.
+      const revisado = PECAS[nome]?.modeloRevisado
+      if (revisado) {
+        const doc = await io.read(path.resolve(RAIZ, revisado))
+        fs.writeFileSync(path.join(SAIDA, `${nome}.glb`), await io.writeBinary(doc))
+        console.log(`  OK ${nome}.glb — modelo revisado: ${revisado}`)
+        continue
+      }
       // --- 1. Conversão assimp -> GLB ---
       let dados = fs.readFileSync(modelo)
       const ehFbxAscii =

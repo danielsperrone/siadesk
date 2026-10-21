@@ -1,0 +1,25 @@
+{
+  "pdf": "D:\\Projetos\\siadesk\\reports\\postes-pdf\\traves.pdf",
+  "pages": 13,
+  "traves": [
+    {
+      "name": "Trave entrada",
+      "page": 6,
+      "imageSize": [
+        325,
+        362
+      ],
+      "coloredPixels": 6708
+    },
+    {
+      "name": "Trave meio",
+      "page": 7,
+      "imageSize": [
+        325,
+        362
+      ],
+      "coloredPixels": 6256
+    }
+  ],
+  "status": "passed"
+}

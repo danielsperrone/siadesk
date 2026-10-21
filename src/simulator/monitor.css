@@ -1,0 +1,72 @@
+.clp-cabecalho { display: flex; align-items: center; gap: 10px; }
+.clp-cabecalho .clp-recolher { flex: 1; min-width: 0; gap: 8px; }
+.painel-simulador .clp-abrir-monitor { display: inline-flex; align-items: center; justify-content: center; padding: 6px; flex-shrink: 0; }
+.clp-cabecalho + .clp-status { margin-top: 8px; }
+.monitor-clp.modal-configuracao { width: min(1040px, calc(100vw - 40px)); max-height: calc(100vh - 32px); background: #111113; color: #e8e8ed; border-color: #505056; font-size: 13px; scrollbar-color: #66666e #202024; }
+.monitor-clp::selection { background: #20c9d4; color: #101012; }
+.monitor-clp header { margin-bottom: 12px; }
+.monitor-clp header h3 { color: #20c9d4; font-size: 23px; }
+.monitor-clp h4 { font-size: 14px; margin: 0; }
+.monitor-clp p { line-height: 1.5; color: #bfc1cb; }
+.monitor-clp .modal-configuracao-conteudo { gap: 16px; }
+.monitor-clp button { background: #29292e; border-color: #5d5d68; color: #ededf2; font-size: 13px; }
+.monitor-clp button:hover:not(:disabled) { background: #3b3b43; }
+.monitor-clp button:disabled { opacity: .5; cursor: default; }
+.monitor-clp button:focus-visible, .monitor-clp input:focus-visible, .monitor-clp select:focus-visible { outline: 2px solid #20c9d4; outline-offset: 3px; }
+.monitor-rede { display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap; color: #bfc1cb; font-variant-numeric: tabular-nums; }
+.monitor-verde { color: #20df80; }
+.monitor-alerta { color: #ff628e; }
+.monitor-presenca { display: flex; align-items: center; gap: 16px; padding: 18px; background: #202024; }
+.monitor-presenca h4 { color: #bfc1cb; margin-bottom: 6px; }
+.monitor-presenca strong { display: block; font-size: 21px; margin-bottom: 6px; }
+.monitor-led-presenca { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: #ff3471; }
+.monitor-led-presenca.conectado { background: #20df80; }
+.monitor-envios { margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; }
+.monitor-abas { display: flex; border-bottom: 1px solid #505056; gap: 2px; }
+.monitor-abas button { border-radius: 4px 4px 0 0; padding: 10px 18px; font-weight: 600; }
+.monitor-abas button[aria-selected='true'] { background: #20c9d4; color: #071c1e; border-color: #20c9d4; }
+.monitor-pistas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.monitor-pista { background: #202024; padding: 18px; min-width: 0; }
+.monitor-pista h4 { color: #20c9d4; font-size: 17px; margin-bottom: 20px; }
+.monitor-clp dl > div { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; margin-bottom: 12px; }
+.monitor-clp dt { color: #bfc1cb; }
+.monitor-clp dd { margin: 0; font-weight: 650; text-align: right; }
+.monitor-clp .monitor-forcar { width: 100%; min-height: 44px; margin: 6px 0 10px; background: #c51c50; border-color: #c51c50; font-weight: 700; }
+.monitor-clp .monitor-forcar:hover:not(:disabled) { background: #db225a; }
+.monitor-clp .monitor-forcar.liberar { background: #20df80; border-color: #20df80; color: #082115; }
+.monitor-clp .monitor-forcar.liberar:hover:not(:disabled) { background: #59eca2; }
+.monitor-modo { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: #bfc1cb; font-size: 12px; min-height: 36px; }
+.monitor-modo button { padding: 6px 8px; font-size: 11px; }
+.monitor-visuais { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 25px 0; }
+.monitor-visuais figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; }
+.monitor-visuais figcaption { text-align: center; min-height: 32px; font-size: 12px; font-weight: 600; }
+.monitor-visuais svg { max-width: 100%; }
+.monitor-visuais span { font-size: 12px; color: #bfc1cb; text-align: center; }
+.monitor-haste { transform-origin: 27px 88px; transition: transform 1s ease-out; }
+.monitor-haste.aberta { transform: rotate(-90deg); }
+.monitor-comandos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.monitor-detalhes { display: flex; flex-direction: column; gap: 24px; }
+.monitor-detalhes section > h4 { margin-bottom: 10px; color: #20c9d4; }
+.monitor-detalhes section > p { margin: 0 0 12px; }
+.monitor-bits { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+.monitor-bits label, .monitor-bits output { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px; background: #202024; font-variant-numeric: tabular-nums; }
+.monitor-bits input { accent-color: #20df80; }
+.monitor-bits .ativo { color: #20df80; }
+.monitor-seletores { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.monitor-memorias { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.monitor-memorias h5 { margin: 0 0 12px; font-size: 13px; }
+.monitor-memorias dd { font-variant-numeric: tabular-nums; }
+.monitor-atividades { border-top: 1px solid #505056; padding-top: 16px; }
+.monitor-atividades > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.monitor-atividades ol { background: #202024; list-style: none; margin: 0; padding: 10px 12px; max-height: 110px; min-height: 60px; overflow: auto; line-height: 1.7; overflow-wrap: anywhere; font-size: 12px; }
+.monitor-atividades time { color: #bfc1cb; font-variant-numeric: tabular-nums; }
+@media (max-width: 740px) {
+  .monitor-clp.modal-configuracao { width: calc(100vw - 24px); padding: 16px; }
+  .monitor-clp header h3 { font-size: 19px; }
+  .monitor-pistas, .monitor-memorias { grid-template-columns: 1fr; }
+  .monitor-presenca { flex-wrap: wrap; padding: 12px; }
+  .monitor-envios { margin-left: 56px; text-align: left; }
+  .monitor-abas button { padding: 10px; }
+  .monitor-seletores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .monitor-haste { transition: none; } }

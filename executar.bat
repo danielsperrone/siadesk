@@ -2,18 +2,19 @@
 
 rem Encerra janelas CMD antigas que rodam o executor do SIADESK antes de renomear esta janela
 taskkill /fi "windowtitle eq SIADESK - Executor Web" /t /f >nul 2>&1
+taskkill /fi "windowtitle eq SIADESK - Executor Desktop" /t /f >nul 2>&1
 
-rem Libera a porta 5173 (porta padrao do Vite) se houver algum processo orfao
+rem Libera portas de processos órfãos
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5173') do (
     taskkill /f /pid %%a >nul 2>&1
 )
-
-rem Libera a porta 5174 (porta reserva do Vite) se houver algum processo orfao
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5174') do (
     taskkill /f /pid %%a >nul 2>&1
 )
+rem O simulador RTSP controla seus próprios processos e informa conflitos de porta.
+rem Não encerre MediaMTX ou FFmpeg de outros programas ao abrir o SIADESK.
 
-title SIADESK - Executor Web
+title SIADESK - Inicializador
 color 0B
 
 echo =====================================================================
@@ -56,19 +57,34 @@ if not exist node_modules (
 )
 
 echo ---------------------------------------------------------------------
-echo Executando o servidor e abrindo o projeto no navegador...
+echo Escolha o modo de execucao do SIADESK:
+echo ---------------------------------------------------------------------
+echo  [1] Aplicativo Desktop (Recomendado - Suporta RTSP/Cameras Virtuais)
+echo  [2] Versao Web (Apenas visualizacao no Navegador - Sem RTSP)
 echo ---------------------------------------------------------------------
 echo.
-echo [INFO] Pressione Ctrl+C nesta janela de comando para encerrar o servidor.
-echo.
+set /p opcao="Escolha uma opcao (1 ou 2, padrao 1): "
 
-rem Executa o servidor de desenvolvimento do Vite e ja abre a pagina web automaticamente
-call npm run dev -- --open
+if "%opcao%"=="" set opcao=1
+
+if "%opcao%"=="1" (
+    title SIADESK - Executor Desktop
+    echo.
+    echo [INFO] Iniciando em modo Desktop...
+    echo.
+    call npm run app
+) else (
+    title SIADESK - Executor Web
+    echo.
+    echo [INFO] Iniciando em modo Navegador...
+    echo.
+    call npm run dev -- --open
+)
 
 if %errorlevel% neq 0 (
     color 0C
     echo.
-    echo [ERRO] O servidor foi encerrado ou ocorreu um erro.
+    echo [ERRO] O aplicativo foi encerrado ou ocorreu um erro.
     echo.
     pause
 )

@@ -1,0 +1,26 @@
+.project-dialog { width: min(540px, calc(100% - 40px)); max-height: calc(100% - 40px); margin: auto; padding: 0; border: 1px solid #526477; border-radius: 12px; background: #1e2730; color: #e8edf2; font: inherit; overflow: auto; scrollbar-width: none; }
+.project-dialog::backdrop { background: #09111bcc; }
+.project-dialog-body { padding: 28px; }
+.project-dialog h2 { margin: 0 0 20px; font-size: 22px; }
+.project-dialog h3 { margin: 28px 0 10px; font-size: 17px; }
+.project-dialog p { color: #c2ced9; line-height: 1.5; font-size: 14px; margin: 12px 0; }
+.project-dialog button { padding: 10px 14px; border: 1px solid #607386; border-radius: 6px; background: #293844; color: #e8edf2; font: inherit; cursor: pointer; }
+.project-dialog button:hover:not(:disabled) { background: #3b4f60; }
+.project-dialog button:disabled { opacity: .5; cursor: default; }
+.project-dialog .project-primary { background: #80bfff; border-color: #80bfff; color: #102332; font-weight: 600; }
+.project-dialog :focus-visible { outline: 2px solid #80bfff; outline-offset: 3px; }
+.project-dialog footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.project-destinations { border: 0; margin: 22px 0; padding: 0; }
+.project-destinations legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.project-destinations label { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; cursor: pointer; }
+.project-destinations input { margin-top: 4px; accent-color: #80bfff; }
+.project-destinations strong, .project-destinations small { display: block; }
+.project-destinations small { color: #c2ced9; margin-top: 5px; line-height: 1.5; }
+.project-field { display: block; font-size: 14px; margin: 18px 0; }
+.project-field input { display: block; width: 100%; margin-top: 8px; padding: 10px 12px; border: 1px solid #607386; border-radius: 6px; font: inherit; background: #141b22; color: #e8edf2; }
+.project-checkbox { display: flex; gap: 10px; align-items: center; margin-top: 20px; font-size: 14px; }
+.project-cloud-list { max-height: 280px; overflow: auto; scrollbar-width: none; }
+.project-cloud-list button { display: block; width: 100%; text-align: left; margin-top: 8px; }
+.project-cloud-list span { display: block; color: #c2ced9; margin-top: 5px; font-size: 13px; }
+.project-dialog .project-error { color: #ffb3ac; }
+@media print { .project-dialog { display: none; } }

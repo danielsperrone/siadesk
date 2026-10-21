@@ -1,0 +1,14 @@
+.cloud-login { min-height: 100%; display: grid; place-items: center; padding: 32px 20px; background: #141b22; color: #e8edf2; }
+.cloud-login-form { width: min(100%, 420px); }
+.cloud-login h1 { font-size: 30px; margin-bottom: 16px; }
+.cloud-login p { font-size: 15px; color: #bfccd7; line-height: 1.6; }
+.cloud-login label { display: block; margin-top: 24px; font-size: 14px; }
+.cloud-login label span { color: #bfccd7; }
+.cloud-login input { width: 100%; display: block; margin-top: 8px; padding: 12px; border: 1px solid #586b7b; border-radius: 6px; background: #1e2730; color: #e8edf2; font: inherit; }
+.cloud-login button { width: 100%; margin-top: 28px; min-height: 46px; border: 0; border-radius: 6px; color: #102332; background: #80bfff; font: inherit; font-weight: 600; cursor: pointer; }
+.cloud-login button:hover:not(:disabled) { background: #a8d2ff; }
+.cloud-login .cloud-error { color: #ffb3ac; margin-top: 18px; }
+.cloud-login .cloud-login-help { margin-top: 22px; font-size: 13px; }
+
+.cloud-login button:disabled { opacity: .55; cursor: default; }
+.cloud-login input:focus-visible, .cloud-login button:focus-visible { outline: 2px solid #80bfff; outline-offset: 3px; }

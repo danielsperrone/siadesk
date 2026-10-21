@@ -1,0 +1,14 @@
+{
+  "version": "0.2.9",
+  "packaged": true,
+  "profile": "C:\\Users\\danie\\AppData\\Local\\Temp\\siadesk-trave-pdf-bQmUjW",
+  "executable": "D:\\Projetos\\siadesk\\dist-packaged\\win-unpacked\\SIADESK.exe",
+  "output": "D:\\Projetos\\siadesk\\reports\\postes-pdf\\before.pdf",
+  "bytes": 4349132,
+  "isolatedProfile": true,
+  "traveNames": [
+    "Trave entrada",
+    "Trave meio"
+  ],
+  "errors": []
+}

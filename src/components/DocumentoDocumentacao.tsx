@@ -1,12 +1,14 @@
-import React, { useMemo, useState, useEffect, Suspense, useRef } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, useGLTF } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { useModelosDisponiveis } from '../hooks/useModelosDisponiveis'
 import { useProject } from '../store/project'
-import { CATALOGO } from '../catalog/pieces'
+import { CATALOGO, modeloDaPeca } from '../catalog/pieces'
 import { gerarLayout } from '../layout/engine'
 import { Piece } from './Piece'
-import type { ProjectConfig, PieceInstance, PostePeriferico, CalibrationData, PieceTypeId } from '../types'
+import { DesenhoTrave } from './DesenhoTrave'
+import { alturaPoste as obterAlturaPoste, perifericosPoste, itensAdicionaisFornecidos } from '../layout/postes'
+import type { ProjectConfig, PieceInstance, PostePeriferico, PosteAdicional, CalibrationData, PieceTypeId } from '../types'
 
 function pluralizarNomePeriferico(nome: string): string {
   if (!nome) return ''
@@ -81,8 +83,8 @@ function calcularComprimentoCabo(
 
   // 1. Descida do poste (Altura máxima)
   let alturaPoste = 0
-  if (p.id.startsWith('poste-siap') || p.rotulo.includes('SIAP')) {
-    const siapId = p.id.startsWith('poste-siap') 
+  if (p.id.startsWith('poste-') || p.rotulo.includes('SIAP')) {
+    const siapId = p.id.startsWith('poste-') 
       ? p.id 
       : `poste-${p.rotulo.split(' — ')[1]?.toLowerCase() || ''}`
     
@@ -97,8 +99,24 @@ function calcularComprimentoCabo(
     alturaPoste = 1.37 // altura física da cancela
   }
 
+  if (p.posteId) alturaPoste = obterAlturaPoste(config, p.posteId)
+  let percursoBarra = 0
+  const adicional = config.postesAdicionais?.find(poste => poste.id === p.posteId)
+  if (adicional?.tipo === 'trave') {
+    const perif = adicional.perifericos.find(item => item.id === p.id)
+    if (perif?.montagem === 'barra-superior') {
+      const zMin = -config.larguraBalanca / 2 - adicional.afastamentoZ
+      const zMax = config.larguraBalanca / 2 + adicional.afastamentoZPositivo
+      percursoBarra = Math.min(Math.abs(p.posicao[2] - zMin), Math.abs(zMax - p.posicao[2]))
+    }
+  }
+
   // 2. Trajeto subterrâneo ortogonal até a caixa de passagem do meio da balança (0,0)
-  const distHorizontal = Math.abs(p.posicao[0]) + Math.abs(p.posicao[2])
+  const zBase = adicional?.tipo === 'trave' && adicional.perifericos.find(item => item.id === p.id)?.montagem === 'barra-superior'
+    ? (Math.abs(p.posicao[2] - (-config.larguraBalanca / 2 - adicional.afastamentoZ)) <= Math.abs(config.larguraBalanca / 2 + adicional.afastamentoZPositivo - p.posicao[2])
+      ? -config.larguraBalanca / 2 - adicional.afastamentoZ : config.larguraBalanca / 2 + adicional.afastamentoZPositivo)
+    : p.posicao[2]
+  const distHorizontal = Math.abs(p.posicao[0]) + Math.abs(zBase)
 
   // 3. Do meio da balança até o destino final
   let distDestino = 0
@@ -112,11 +130,12 @@ function calcularComprimentoCabo(
   }
 
   // Comprimento total arredondado para cima para segurança comercial
-  return Math.ceil(alturaPoste + distHorizontal + distDestino + folga)
+  return Math.ceil(alturaPoste + percursoBarra + distHorizontal + distDestino + folga)
 }
 
 const ESPEC_CABO_ALIMENTACAO_25 = 'Cabo de cobre flexível 0,6/1 kV, 3G2,5 mm², com condutores internos de cores distintas, incluindo condutor de proteção, adequado para instalação em eletroduto subterrâneo/externo. A configuração dos condutores deverá seguir o padrão elétrico local: F+N+PE ou 2F+PE, conforme tensão disponível e projeto elétrico da unidade (alimentação em 220 V).'
 const ESPEC_CABO_COMANDO_15 = 'Cabo PP flexível de cobre, blindado, 4x1,5 mm², com condutores internos de cores distintas, destinado a comando/sinal entre periférico e Painel SIAMAC.'
+const ESPEC_CABO_REFLETOR_25 = 'Cabo PP flexível de cobre, 3x2,5 mm², com 3 vias, incluindo condutor de proteção, para alimentação do refletor a partir do Quadro de Distribuição. Um cabo por refletor.'
 const ESPEC_CABO_SEMAFORO_25 = 'Cabo PP flexível de cobre, 3x2,5 mm², com condutores internos de cores distintas, destinado ao acionamento dos semáforos pelo Painel SIAMAC.'
 const ESPEC_CABO_REDE_CAT6 = 'Cabo de rede CAT6 blindado ou superior, cobre puro, compatível com tráfego de dados e PoE quando aplicável, instalado em eletroduto protegido, com aterramento da blindagem conforme projeto elétrico.'
 const ESPEC_CABO_SOM_25 = 'Cabo paralelo de som 2x2,5 mm², cobre puro, não CCA, compatível com a potência do amplificador e impedância da caixa/corneta instalada.'
@@ -148,7 +167,9 @@ const obterDetalheCabo = (cabo: string): string => {
     return 'Condutores de cores distintas, com malha de blindagem, para comando/sinal com o Painel SIAMAC.';
   }
   if (cabo.includes('PP flexível de cobre, 3x2,5 mm²')) {
-    return 'Condutores de cores distintas, destinado ao acionamento de semáforos pelo Painel SIAMAC.';
+    return cabo === ESPEC_CABO_REFLETOR_25
+      ? '3 vias, incluindo proteção, para alimentação do refletor pelo Quadro de Distribuição. Um cabo por refletor.'
+      : 'Condutores de cores distintas, destinado ao acionamento de semáforos pelo Painel SIAMAC.';
   }
   if (cabo.includes('CAT6 blindado')) {
     return 'Instalado em eletroduto protegido com aterramento da blindagem conforme projeto elétrico.';
@@ -233,32 +254,18 @@ export const SeloPagina: React.FC<{
 
 
 interface ItemDetalheSpec {
+  trave?: PosteAdicional
   id: string
   tipo: 'poste' | 'cancela' | 'painel'
   titulo: string
   nomeNoSelo: string
   ativo: boolean
   altura: number
+  largura?: number
   diametro?: string
   tipoPeca: PieceTypeId
   perifericos: PostePeriferico[]
   paginaNum?: number
-}
-
-function ModeloGlb({ url }: { url: string }) {
-  const { scene } = useGLTF(url)
-  return <primitive object={scene.clone()} />
-}
-
-function PlaceholderDetalhe({ instancia }: { instancia: PieceInstance }) {
-  const tipo = CATALOGO[instancia.tipo]
-  const [cx, cy, cz] = tipo.placeholder
-  return (
-    <mesh position={[0, cy / 2, 0]} castShadow receiveShadow>
-      <boxGeometry args={[cx, cy, cz]} />
-      <meshStandardMaterial color={tipo.cor} />
-    </mesh>
-  )
 }
 
 function CanvasCapturer({ onCapture }: { onCapture: (dataUrl: string) => void }) {
@@ -291,6 +298,7 @@ function CanvasCapturer({ onCapture }: { onCapture: (dataUrl: string) => void })
 }
 
 interface PosteDetalheCanvasProps {
+  config: ProjectConfig
   tipoPeca: PieceTypeId
   altura: number
   perifericos: PostePeriferico[]
@@ -305,6 +313,7 @@ interface PosteDetalheCanvasProps {
 }
 
 const PosteDetalheCanvas: React.FC<PosteDetalheCanvasProps> = ({
+  config,
   tipoPeca,
   altura,
   perifericos,
@@ -320,35 +329,14 @@ const PosteDetalheCanvas: React.FC<PosteDetalheCanvasProps> = ({
   const controlsRef = useRef<any>(null)
 
   const pecasLocais = useMemo(() => {
-    const list: PieceInstance[] = []
-
-    // 1. O Poste ou Cancela principal
-    list.push({
-      id: `main-${idItem}`,
-      tipo: tipoPeca,
-      rotulo: idItem.toUpperCase(),
-      posicao: [0, 0, 0],
-      rotacaoY: 0
-    })
-
-    // 2. Os periféricos instalados nele
-    perifericos.forEach((perif) => {
-      const cal = calibracoes[perif.tipo] || { altura: 0, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: 0 }
-      const anguloGraus = perif.rotacaoY + cal.rotacaoY
-      const rotacaoRadianos = (anguloGraus * Math.PI) / 180
-
-      list.push({
-        id: `local-perif-${perif.id}`,
-        tipo: perif.tipo,
-        rotulo: CATALOGO[perif.tipo]?.nome || 'Equipamento',
-        posicao: [0, perif.altura, 0],
-        rotacaoY: rotacaoRadianos,
-        ancora: [cal.fixadorX, cal.fixadorY, cal.fixadorZ]
-      })
-    })
-
-    return list
-  }, [tipoPeca, altura, perifericos, calibracoes, idItem])
+    const layout = gerarLayout(config, calibracoes)
+    const principal = layout.find(p => p.id === idItem)
+    if (!principal) return []
+    const ids = new Set(perifericos.map(p => p.id))
+    return layout.filter(p => p.id === idItem || ids.has(p.id)).map(p => ({ ...p,
+      posicao: [p.posicao[0] - principal.posicao[0], p.posicao[1], p.posicao[2] - principal.posicao[2]] as [number, number, number],
+    }))
+  }, [config, perifericos, calibracoes, idItem])
 
   const camConfig = useMemo(() => {
     const theta = rotacaoInicial || 0
@@ -357,29 +345,17 @@ const PosteDetalheCanvas: React.FC<PosteDetalheCanvasProps> = ({
     let target = [0, 1.5, 0] as [number, number, number]
 
     if (distanciaCamera === undefined) {
-      if (altura === 6.0) {
-        py = 3.0
-        r = 7.5
-        target = [0, 3.0, 0]
-      } else if (altura === 1.5) {
-        py = 0.75
-        r = 2.5
-        target = [0, 0.75, 0]
-      } else if (tipoPeca.startsWith('cancela')) {
-        py = 0.7
-        r = 2.5
-        target = [0, 0.7, 0]
-      }
-    } else {
-      py = altura / 2
-      target = [0, altura / 2, 0]
+      const largura = pecasLocais[0]?.estruturaPoste?.largura ?? 0
+      r = Math.max(2.5, altura * 1.35, largura * 1.4)
     }
+    py = altura / 2
+    target = [0, altura / 2, 0]
 
     const px = r * Math.sin(theta)
     const pz = r * Math.cos(theta)
 
     return { position: [px, py, pz] as [number, number, number], target }
-  }, [altura, tipoPeca, rotacaoInicial, distanciaCamera])
+  }, [altura, tipoPeca, rotacaoInicial, distanciaCamera, pecasLocais])
 
   return (
     <Canvas
@@ -393,25 +369,7 @@ const PosteDetalheCanvas: React.FC<PosteDetalheCanvasProps> = ({
       <ambientLight intensity={0.8} />
       <directionalLight position={[5, 10, 5]} intensity={1.2} castShadow />
 
-      {pecasLocais.map((p) => {
-        const tipo = CATALOGO[p.tipo]
-        const [ax, ay, az] = p.ancora ?? [0, 0, 0]
-
-        return (
-          <group key={p.id} position={p.posicao} rotation={[0, p.rotacaoY, 0]}>
-            {/* Grupo deslocado de forma a alinhar o fixador com a âncora */}
-            <group position={[-ax, -ay, -az]}>
-              {modelosDisponiveis.has(tipo.modelo) ? (
-                <Suspense fallback={<PlaceholderDetalhe instancia={p} />}>
-                  <ModeloGlb url={`models/${tipo.modelo}.glb`} />
-                </Suspense>
-              ) : (
-                <PlaceholderDetalhe instancia={p} />
-              )}
-            </group>
-          </group>
-        )
-      })}
+      {pecasLocais.map(p => <Piece key={p.id} instancia={p} modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)} mostrarRotulos={false} interativo={false} />)}
 
       {onCapture && <CanvasCapturer onCapture={onCapture} />}
 
@@ -460,6 +418,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
   // Estados para paginação na visualização do PDF
   const [paginaAtiva, setPaginaAtiva] = useState(1)
   const [isPrinting, setIsPrinting] = useState(false)
+  const [zoomPreview, setZoomPreview] = useState(100)
 
   // Estados para captura sequencial de 3D antes de imprimir o PDF (previne limite de WebGL contexts e garante carregamento)
   const [capturingPhase, setCapturingPhase] = useState<'idle' | 'capturing' | 'ready'>('idle')
@@ -590,8 +549,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     const startY = e.clientY
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const diffX = moveEvent.clientX - startX
-      const diffY = moveEvent.clientY - startY
+      const diffX = (moveEvent.clientX - startX) / (zoomPreview / 100)
+      const diffY = (moveEvent.clientY - startY) / (zoomPreview / 100)
       setOffsetsArrasto(prev => ({
         ...prev,
         [chave]: {
@@ -605,8 +564,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
 
-      const diffX = upEvent.clientX - startX
-      const diffY = upEvent.clientY - startY
+      const diffX = (upEvent.clientX - startX) / (zoomPreview / 100)
+      const diffY = (upEvent.clientY - startY) / (zoomPreview / 100)
 
       // Só persiste se houve algum arrasto real
       if (diffX !== 0 || diffY !== 0) {
@@ -646,21 +605,17 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
   }, [config, calibracoes])
 
   const quantitativoPostes = useMemo(() => {
-    let p15m = 0
-    let p30m = 0
-    let p60m = 0
-
-    pecasCalculo.forEach((p) => {
-      if (p.tipo === 'poste-1-5m') p15m++
-      if (p.tipo === 'poste-3m') p30m++
-      if (p.tipo === 'poste-6m') p60m++
-    })
-
-    return [
-      { tamanho: '1,50 m', quantidade: p15m, descricao: 'Poste Curto (Sensor de barreira / Câmera de veículo grande)', aplicacao: 'SIAP04, SIAP08' },
-      { tamanho: '3,00 m', quantidade: p30m, descricao: 'Poste Padrão (Antena RFID, Semáforo, Câmera IP / OCR)', aplicacao: 'SIAP01, SIAP02, SIAP03, SIAP05, SIAP06, SIAP07' },
-      { tamanho: '6,00 m', quantidade: p60m, descricao: 'Poste Elevado (câmeras superiores de auditoria e monitoração ampla)', aplicacao: 'SIAP09' }
-    ]
+    const grupos = new Map<string, { tamanho: string; quantidade: number; descricao: string; aplicacao: string }>()
+    for (const p of pecasCalculo.filter(p => p.estruturaPoste)) {
+      const estrutura = p.estruturaPoste!
+      const tamanho = `${estrutura.altura.toFixed(2)} m${estrutura.largura ? ` × ${estrutura.largura.toFixed(2)} m` : ''}`
+      const descricao = p.tipo === 'poste-trave' ? 'Poste trave (portal)' : 'Poste metálico'
+      const key = `${descricao}-${tamanho}`
+      const grupo = grupos.get(key)
+      if (grupo) { grupo.quantidade++; grupo.aplicacao += `, ${p.rotulo}` }
+      else grupos.set(key, { tamanho, quantidade: 1, descricao, aplicacao: p.rotulo })
+    }
+    return [...grupos.values()]
   }, [pecasCalculo])
 
   const itensFiacao = useMemo(() => {
@@ -677,7 +632,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       const local = p.rotulo.split(' — ')[1] || p.rotulo.split(' - ')[1] || 'Área da balança rodoviária'
       const equipamentoFormatado = p.rotulo.split(' — ')[0] || p.rotulo.split(' - ')[0] || nomeBase
 
-      if (p.tipo === 'semaforo') {
+      if (p.tipo === 'refletor-frontal' || p.tipo === 'refletor-poste') {
+        const dest = 'Quadro de Distribuição'
+        lista.push({ equipamento: equipamentoFormatado, local, cabo: ESPEC_CABO_REFLETOR_25,
+          destino: dest, comprimento: calcularComprimentoCabo(p, dest, config) })
+      } else if (p.tipo === 'semaforo') {
         const dest = 'Painel SIAMAC'
         lista.push({
           equipamento: equipamentoFormatado,
@@ -791,10 +750,18 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     return lista
   }, [pecasCalculo, config])
 
+  const pecasCotasZ = useMemo(() => pecas.flatMap(p => {
+    if (p.tipo !== 'poste-trave' || !p.estruturaPoste?.largura) return [p]
+    return [-1, 1].map(sinal => ({ ...p, id: `${p.id}-coluna-${sinal}`,
+      posicao: [p.posicao[0], 0, p.posicao[2] + sinal * p.estruturaPoste!.largura! / 2] as [number, number, number] }))
+  }), [pecas])
+  const pecasCotasX = useMemo(() => pecas.map(p => p.tipo !== 'poste-trave' ? p : ({ ...p,
+    posicao: [p.posicao[0], 0, p.posicao[2] - (p.estruturaPoste?.largura ?? 0) / 2] as [number, number, number] })), [pecas])
+
   const itensParaRotular = useMemo(() => {
     const lista: PieceInstance[] = []
     pecas.forEach(p => {
-      if (p.id.startsWith('poste-siap')) {
+      if (p.id.startsWith('poste-')) {
         lista.push(p)
       } else if (p.id === 'balanca') {
         lista.push(p)
@@ -840,8 +807,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       }
       
       let refPoste = ''
-      if (p.id.startsWith('poste-siap')) {
-        refPoste = p.id.replace('poste-', '').toUpperCase() // ex: "SIAP01"
+      if (p.id.startsWith('poste-')) {
+        refPoste = p.posteId?.startsWith('adicional-') ? p.rotulo : p.id.replace('poste-', '').toUpperCase()
       } else if (p.id === 'balanca') {
         refPoste = 'BALANÇA'
       } else if (p.id === 'cancela-entrada') {
@@ -856,7 +823,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
         pyRef = canvasHeight - py
       }
       let pyEstrutura = pyRef
-      if (p.id.startsWith('poste-siap')) {
+      if (p.id.startsWith('poste-')) {
         // Filtra os periféricos deste poste pela proximidade X e Z no 3D
         const perifsDestePoste = pecas.filter(peca => 
           peca.id !== p.id && 
@@ -1024,8 +991,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       }
       
       let refPoste = ''
-      if (p.id.startsWith('poste-siap')) {
-        refPoste = p.id.replace('poste-', '').toUpperCase()
+      if (p.id.startsWith('poste-')) {
+        refPoste = p.rotulo
       } else if (p.id === 'balanca') {
         refPoste = 'BALANÇA'
       } else if (p.id === 'cancela-entrada') {
@@ -1040,7 +1007,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
         pyRef = canvasHeight - py
       }
       let pyEstrutura = pyRef
-      if (p.id.startsWith('poste-siap')) {
+      if (p.id.startsWith('poste-')) {
         // Filtra os periféricos deste poste pela proximidade X e Z no 3D
         const perifsDestePoste = pecas.filter(peca => 
           peca.id !== p.id && 
@@ -1114,10 +1081,9 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     superiores.forEach((ip, idx) => {
       // Determina os periféricos do poste para calcular alturaCaixa (agrupando duplicados)
       let listaAgrupados: Array<{ nome: string; quantidade: number }> = []
-      if (ip.id.startsWith('poste-siap')) {
+      if (ip.id.startsWith('poste-')) {
         const siapNum = ip.id.replace('poste-siap', '')
-        const chave = `perifericosSiap${siapNum}` as keyof ProjectConfig
-        const perifericos = config[chave] as PostePeriferico[] | undefined
+        const perifericos = perifericosPoste(config, ip.id.replace('poste-', ''))
         if (perifericos && perifericos.length > 0) {
           listaAgrupados = obterPerifericosAgrupados(perifericos, `siap${siapNum}`)
         }
@@ -1173,10 +1139,9 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     inferiores.forEach((ip, idx) => {
       // Determina os periféricos do poste para calcular alturaCaixa (agrupando duplicados)
       let listaAgrupados: Array<{ nome: string; quantidade: number }> = []
-      if (ip.id.startsWith('poste-siap')) {
+      if (ip.id.startsWith('poste-')) {
         const siapNum = ip.id.replace('poste-siap', '')
-        const chave = `perifericosSiap${siapNum}` as keyof ProjectConfig
-        const perifericos = config[chave] as PostePeriferico[] | undefined
+        const perifericos = perifericosPoste(config, ip.id.replace('poste-', ''))
         if (perifericos && perifericos.length > 0) {
           listaAgrupados = obterPerifericosAgrupados(perifericos, `siap${siapNum}`)
         }
@@ -1255,8 +1220,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       // Evita o ponto "BALANÇA" já que a balança rodoviária em si não tem periféricos de fiação adicionados nela
       if (ip.id === 'balanca') return
 
-      const nomePonto = ip.id.startsWith('poste-siap')
-        ? `Poste ${ip.id.replace('poste-', '').toUpperCase()}`
+      const nomePonto = ip.id.startsWith('poste-')
+        ? ip.instancia.rotulo
         : ip.refPoste // ex: "CANCELA A", "CANCELA B"
       
       pontosMap[nomePonto] = {
@@ -1275,6 +1240,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       } else if (p.tipo === 'painel-automacao' || p.tipo === 'painel-som') {
         // Painéis centrais entram como ponto próprio (alimentação do painel)
         nomePonto = p.tipo === 'painel-automacao' ? 'Painel SIAMAC' : 'Painel de Som'
+      } else if (p.posteId) {
+        nomePonto = pecasCalculo.find(item => item.id === `poste-${p.posteId}`)?.rotulo ?? p.posteId
       } else if (p.rotulo.includes(' — ')) {
         const siapId = p.rotulo.split(' — ')[1] // ex: "SIAP01", "SIAP02"
         nomePonto = `Poste ${siapId.toUpperCase()}`
@@ -1299,7 +1266,9 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
       // Mapeamento dos cabos para cada tipo de periférico
       const cabosEspecificos: Array<{ cabo: string; destino: string }> = []
-      if (p.tipo === 'semaforo') {
+      if (p.tipo === 'refletor-frontal' || p.tipo === 'refletor-poste') {
+        cabosEspecificos.push({ cabo: ESPEC_CABO_REFLETOR_25, destino: 'Quadro de Distribuição' })
+      } else if (p.tipo === 'semaforo') {
         cabosEspecificos.push({
           cabo: ESPEC_CABO_SEMAFORO_25,
           destino: 'Painel SIAMAC'
@@ -1401,7 +1370,9 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
     pecasCalculo.forEach((p) => {
       const cabosEspecificos: Array<{ cabo: string; destino: string; nomeAmigavel: string }> = []
-      if (p.tipo === 'semaforo') {
+      if (p.tipo === 'refletor-frontal' || p.tipo === 'refletor-poste') {
+        cabosEspecificos.push({ cabo: ESPEC_CABO_REFLETOR_25, destino: 'Quadro de Distribuição', nomeAmigavel: 'Cabo PP 3x2,5 mm² para refletores' })
+      } else if (p.tipo === 'semaforo') {
         cabosEspecificos.push({ cabo: ESPEC_CABO_SEMAFORO_25, destino: 'Painel SIAMAC', nomeAmigavel: 'Cabo PP 3x2,5 mm² para semáforos' })
       } else if (p.tipo === 'camera-ip' || p.tipo === 'camera-ip-baixo' || p.tipo === 'camera-ocr') {
         cabosEspecificos.push({ cabo: ESPEC_CABO_REDE_CAT6, destino: 'Roteador PoE', nomeAmigavel: 'Cabo de rede CAT6 blindado ou superior' })
@@ -1516,13 +1487,21 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
           titulo: `DETALHAMENTO TÉCNICO - POSTE SIAP${spec.num}`,
           nomeNoSelo: `SIAP${spec.num}`,
           ativo: true,
-          altura: spec.altura,
+          altura: obterAlturaPoste(config, `siap${spec.num}`),
           diametro: spec.diametro,
           tipoPeca: spec.tipoPeca,
           perifericos: perifs
         })
       }
     })
+
+    for (const poste of config.postesAdicionais ?? []) {
+      lista.push({ id: `poste-${poste.id}`, tipo: 'poste', titulo: `DETALHAMENTO TÉCNICO - ${poste.nome.toUpperCase()}`,
+        nomeNoSelo: poste.nome, ativo: true, altura: poste.altura,
+        largura: poste.tipo === 'trave' ? config.larguraBalanca + poste.afastamentoZ + poste.afastamentoZPositivo : undefined,
+        trave: poste.tipo === 'trave' ? poste : undefined,
+        tipoPeca: poste.tipo === 'trave' ? 'poste-trave' : 'poste-3m', perifericos: poste.perifericos })
+    }
 
     // Painéis centrais (SIAMAC e Som) — concentradores de cabos, sem poste
     if (config.painelAutomacao) {
@@ -1650,7 +1629,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
         // Poste em si
         if (isPosteAtivo && isPosteFornecido) {
-          const alturaPoste = siapNum === '04' || siapNum === '08' ? '1.5m' : (siapNum === '09' ? '6m' : '3m')
+          const alturaPoste = `${obterAlturaPoste(config, `siap${siapNum}`)}m`
           adicionarAoGrupo(`Poste SIAP (${alturaPoste})`, `Poste de sustentação metálico galvanizado de ${alturaPoste}`)
         }
 
@@ -1670,6 +1649,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
           }
         }
       })
+
+      for (const item of itensAdicionaisFornecidos(config)) {
+        const equipamento = Object.values(CATALOGO).find(p => p.id === item.nome)
+        adicionarAoGrupo(equipamento?.nome ?? item.nome, equipamento?.descricao ?? item.descricao)
+      }
 
       // 4. Equipamentos Adicionais
       if (config.equipamentosAdicionais && config.equipamentosAdicionais.length > 0) {
@@ -1725,6 +1709,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 { ponto: siapName, pergunta: `Semáforo: Está conectado com cabo PP flexível de cobre, 3x2,5 mm², destinado ao acionamento dos semáforos pelo Painel SIAMAC?` },
                 { ponto: siapName, pergunta: 'Semáforo: As lentes indicadoras (verde e vermelha) acendem corretamente nos testes de comando?' }
               )
+            } else if (perif.tipo === 'refletor-frontal' || perif.tipo === 'refletor-poste') {
+              lista.push({ ponto: siapName, pergunta: `${CATALOGO[perif.tipo].nome}: Está fixado e orientado corretamente, com 1 cabo PP de 3 vias de 2,5 mm² até o Quadro de Distribuição?` })
             } else if (perif.tipo === 'camera-ip' || perif.tipo === 'camera-ip-baixo' || perif.tipo === 'camera-ocr') {
               const labelCam = perif.tipo === 'camera-ocr' ? 'Câmera OCR' : 'Câmera IP'
               lista.push(
@@ -1770,6 +1756,12 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
         }
       }
     })
+
+    for (const poste of config.postesAdicionais ?? []) {
+      lista.push({ ponto: poste.nome, pergunta: `A estrutura está fixada ao chão, aprumada e com a altura prevista de ${poste.altura} m?` })
+      for (const p of poste.perifericos) lista.push({ ponto: poste.nome,
+        pergunta: `${CATALOGO[p.tipo].nome}: fixação, cabeamento, orientação e funcionamento conferidos a ${p.montagem === 'barra-superior' ? poste.altura : p.altura} m de altura?` })
+    }
 
     // --- GRUPO 2: CANCELAS ---
     if (config.cancelaEntrada) {
@@ -1859,6 +1851,10 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
           }
         })
       })
+      for (const poste of config.postesAdicionais ?? []) for (const p of poste.perifericos) {
+        if (p.tipo === tipo && p.fornecimentoSiamac !== false) instancias.push({ tipo: p.tipo, poste: poste.nome,
+          altura: p.montagem === 'barra-superior' ? poste.altura : p.altura })
+      }
       return instancias
     }
 
@@ -2126,7 +2122,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
   }, [itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, paginasChecklistInternoA4, apenasChecklist, tipoDoc])
 
   return (
-    <div className="documento-impressao">
+    <div className="documento-impressao" style={{ '--zoom-relatorio': isPrinting || capturingPhase !== 'idle' ? 1 : zoomPreview / 100 } as React.CSSProperties}>
       {capturingPhase === 'capturing' && (
         <div style={{
           position: 'fixed',
@@ -2228,6 +2224,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
         )}
 
 
+        <div className="preview-zoom" role="group" aria-label="Zoom do relatório">
+          <button type="button" aria-label="Diminuir zoom" disabled={zoomPreview <= 25} onClick={() => setZoomPreview(z => Math.max(25, z - 25))}>−</button>
+          <button type="button" title="Restaurar zoom para 100%" aria-label={`Zoom ${zoomPreview}%. Restaurar para 100%`} onClick={() => setZoomPreview(100)}>{zoomPreview}%</button>
+          <button type="button" aria-label="Aumentar zoom" disabled={zoomPreview >= 200} onClick={() => setZoomPreview(z => Math.min(200, z + 25))}>+</button>
+        </div>
         <button className="btn-preview-print" onClick={handleSalvarPDF}>
           🖨️ Salvar PDF
         </button>
@@ -2359,7 +2360,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                     <Piece
                       key={p.id}
                       instancia={p}
-                      modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
+                      modeloDisponivel={modelosDisponiveis.has(modeloDaPeca(p))}
                       mostrarRotulos={false}
                     />
                   ))}
@@ -2519,7 +2520,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                     <Piece
                       key={`p-afast-3d-${p.id}`}
                       instancia={p}
-                      modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
+                      modeloDisponivel={modelosDisponiveis.has(modeloDaPeca(p))}
                       mostrarRotulos={false}
                     />
                   ))}
@@ -2562,18 +2563,19 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 />
 
                 {/* Desenho das cotas das peças ativas em relação à balança */}
-                {pecas.map(p => {
-                  if (!p.id.startsWith('poste-siap') && p.id !== 'cancela-entrada' && p.id !== 'cancela-saida') return null;
+                {pecasCotasX.map(p => {
+                  if (!p.id.startsWith('poste-') && p.id !== 'cancela-entrada' && p.id !== 'cancela-saida') return null;
                   
                   const px = cx + p.posicao[0] * zoom;
                   const py = cy + p.posicao[2] * zoom;
                   
-                  const isCabeceiraA = p.posicao[0] < 0;
+                  const adicional = config.postesAdicionais?.find(poste => poste.id === p.posteId);
+                  const isCabeceiraA = adicional ? adicional.referencia === 'A' : p.posicao[0] < 0;
                   const x_cabeceira = isCabeceiraA 
                     ? cx - metadeComprimento * zoom 
                     : cx + metadeComprimento * zoom;
                   
-                  const isCentral = Math.abs(p.posicao[0]) < 0.1;
+                  const isCentral = adicional ? adicional.referencia === 'meio' : Math.abs(p.posicao[0]) < 0.1;
                   
                   // Distância física horizontal em metros
                   const distFisicaX = isCentral 
@@ -2664,8 +2666,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 })}
 
                 {/* 2. COTA VERTICAL (Z) - AFASTAMENTO LATERAIS */}
-                {pecas.map(p => {
-                  if (!p.id.startsWith('poste-siap') && p.id !== 'cancela-entrada' && p.id !== 'cancela-saida') return null;
+                {pecasCotasZ.map(p => {
+                  if (!p.id.startsWith('poste-') && p.id !== 'cancela-entrada' && p.id !== 'cancela-saida') return null;
 
                   const px = cx + p.posicao[0] * zoom;
                   const py = cy + p.posicao[2] * zoom;
@@ -2808,7 +2810,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               {/* COLUNA 1: DESENHO DO TUBO (ESQUERDA) */}
               <div className="subcontainer-tabela" style={{ flex: 0.55, display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '12px', height: '530px' }}>
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src="/Poste Frontal.png" alt="Poste Frontal" style={{ height: '100%', width: '100%', objectFit: 'contain' }} />
+                  <img src={`${import.meta.env.BASE_URL}Poste Frontal.png`} alt="Poste Frontal" style={{ height: '100%', width: '100%', objectFit: 'contain' }} />
                 </div>
               </div>
 
@@ -2824,13 +2826,13 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                   {/* Detalhe A (Elevação de Fixação) */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569', marginBottom: '5px' }}>DETALHE "A" - FIXAÇÃO DO POSTE</span>
-                    <img src="/Chumbamento.png" alt="Detalhe A" style={{ maxHeight: '310px', maxWidth: '100%', objectFit: 'contain' }} />
+                    <img src={`${import.meta.env.BASE_URL}Chumbamento.png`} alt="Detalhe A" style={{ maxHeight: '310px', maxWidth: '100%', objectFit: 'contain' }} />
                   </div>
 
                   {/* Sapata / Pilar (Planta Superior) */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569', marginBottom: '5px' }}>VISTA SUPERIOR DA SAPATA</span>
-                    <img src="/Visão dos reforços.png" alt="Vista Superior da Sapata" style={{ maxHeight: '310px', maxWidth: '100%', objectFit: 'contain' }} />
+                    <img src={`${import.meta.env.BASE_URL}Visão dos reforços.png`} alt="Vista Superior da Sapata" style={{ maxHeight: '310px', maxWidth: '100%', objectFit: 'contain' }} />
                     <span style={{ fontSize: '8.5px', color: '#0284c7', marginTop: '6px', textAlign: 'center', fontStyle: 'italic', fontWeight: '600' }}>
                       * A parte em azul representa a base de alvenaria para o poste
                     </span>
@@ -2991,7 +2993,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
         return (
           <div 
             key={item.id} 
-            className="pagina-a3 pagina-tecnica"
+            className={`pagina-a3 pagina-tecnica${item.trave ? ' pagina-detalhe-trave' : ''}`}
+            data-detalhe-id={item.id}
             style={isCurrentCapture ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
           >
           {/* Cabeçalho Divisor */}
@@ -3019,6 +3022,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               
               {/* Lado Esquerdo: Bloco de Visualização 3D */}
               <div className="bloco-visualizacao-3d">
+                <div className="vista-detalhe-3d">
                 <div className="container-canvas-poste-detalhe-clean">
                   <div className="canvas-poste-3d-clean">
                     {isPrinting && capturedImages[`detail-${item.id}`] ? (
@@ -3029,13 +3033,14 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                       />
                     ) : (
                       <PosteDetalheCanvas
+                        config={config}
                         tipoPeca={item.tipoPeca}
                         altura={item.altura}
                         perifericos={item.perifericos}
                         calibracoes={calibracoes}
                         modelosDisponiveis={modelosDisponiveis}
                         idItem={item.id}
-                        rotacaoInicial={(config.rotacoes3D || {})[item.id] || 0}
+                        rotacaoInicial={config.rotacoes3D?.[item.id] ?? (item.tipoPeca === 'poste-trave' ? Math.PI / 2 : 0)}
                         onRotationChange={(theta) => handleRotationChange(item.id, theta)}
                         distanciaCamera={item.tipo === 'painel' ? 2.5 : undefined}
                         onCapture={
@@ -3048,8 +3053,10 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                   </div>
                 </div>
                 <div className="legenda-3d">
-                  Clique e arraste para rotacionar horizontalmente
+                  {isPrinting ? 'Vista 3D dos equipamentos instalados' : 'Clique e arraste para rotacionar horizontalmente'}
                 </div>
+                </div>
+                {item.trave && <DesenhoTrave poste={item.trave} larguraBalanca={config.larguraBalanca} />}
               </div>
 
               {/* Lado Direito: Especificações Estruturais do Poste/Cancela */}
@@ -3068,7 +3075,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                     <span className="valor-espec">
                       {item.tipo === 'painel'
                         ? (item.tipoPeca === 'painel-automacao' ? 'Painel de Automação (Central de Comando)' : 'Painel de Som (Amplificação de Áudio)')
-                        : item.tipo === 'cancela' ? 'Cancela Automática de Acesso' : 'Poste Metálico de Suporte'}
+                        : item.tipo === 'cancela' ? 'Cancela Automática de Acesso' : item.tipoPeca === 'poste-trave' ? 'Poste trave (portal)' : 'Poste Metálico de Suporte'}
                     </span>
                   </div>
                   <div className="linha-espec">
@@ -3081,6 +3088,28 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                       <span className="valor-espec">{item.diametro.split(' - ')[0]}</span>
                     </div>
                   )}
+                  {item.largura !== undefined && <div className="linha-espec">
+                    <span className="rotulo-espec">Largura entre colunas:</span>
+                    <span className="valor-espec">{item.largura.toFixed(2).replace('.', ',')} m</span>
+                  </div>}
+                  {item.trave && <>
+                    <div className="linha-espec">
+                      <span className="rotulo-espec">Referência de posicionamento:</span>
+                      <span className="valor-espec">{item.trave.referencia === 'meio' ? 'Meio da balança' : `Cabeceira ${item.trave.referencia} (${item.trave.referencia === 'A' ? 'entrada' : 'saída'})`}</span>
+                    </div>
+                    <div className="linha-espec">
+                      <span className="rotulo-espec">Deslocamento longitudinal X:</span>
+                      <span className="valor-espec">{item.trave.distanciaX.toFixed(2).replace('.', ',')} m a partir da referência</span>
+                    </div>
+                    <div className="linha-espec">
+                      <span className="rotulo-espec">Afastamento da coluna Z-:</span>
+                      <span className="valor-espec">{item.trave.afastamentoZ.toFixed(2).replace('.', ',')} m da borda da balança</span>
+                    </div>
+                    <div className="linha-espec">
+                      <span className="rotulo-espec">Afastamento da coluna Z+:</span>
+                      <span className="valor-espec">{item.trave.afastamentoZPositivo.toFixed(2).replace('.', ',')} m da borda da balança</span>
+                    </div>
+                  </>}
                   {item.tipo === 'poste' && item.diametro && (
                     <div className="linha-espec">
                       <span className="rotulo-espec">Especificação do Tubo:</span>
@@ -3104,6 +3133,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                         ? 'Fixação em parede/estrutura da central de comando'
                         : item.tipo === 'cancela'
                         ? 'Base de concreto nivelada com parafusos de fixação'
+                        : item.trave ? 'Duas bases flangeadas com chumbadores, apoiadas no chão'
                         : 'Chapa de base soldada flangeada com chumbadores'}
                     </span>
                   </div>
@@ -3284,6 +3314,10 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                       }];
                       textoFuncao = 'Sinalização visual de parada/liberação do fluxo de veículos sobre a balança rodoviária.';
                       icone = '';
+                    } else if (perif.tipo === 'refletor-frontal' || perif.tipo === 'refletor-poste') {
+                      listaCabos = [{ rotulo: 'Alimentação (1 cabo)', espec: ESPEC_CABO_REFLETOR_25, destino: 'Quadro de Distribuição' }];
+                      textoFuncao = CATALOGO[perif.tipo].descricao;
+                      icone = '';
                     } else if (perif.tipo === 'camera-ip') {
                       listaCabos = [{
                         rotulo: 'Rede',
@@ -3387,8 +3421,12 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                           ))}
                           <div className="corpo-item">
                             <strong className="etiqueta">Altura instalada:</strong>
-                            <span>{perif.altura.toFixed(2).replace('.', ',')} m de altura</span>
+                            <span>{(item.trave && perif.montagem === 'barra-superior' ? item.altura : perif.altura).toFixed(2).replace('.', ',')} m de altura</span>
                           </div>
+                          {item.trave && <div className="corpo-item">
+                            <strong className="etiqueta">Ponto de montagem:</strong>
+                            <span>{perif.montagem === 'barra-superior' ? `Barra superior - Z = ${(perif.deslocamentoBarra ?? 0).toFixed(2).replace('.', ',')} m em relação ao centro da balança` : `Coluna lateral ${perif.montagem === 'coluna-positiva' ? 'Z+' : 'Z-'}`}</span>
+                          </div>}
                           <div className="corpo-item">
                             <strong className="etiqueta">Função no sistema:</strong>
                             <span>{textoFuncao}</span>
@@ -3502,7 +3540,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                     <Piece
                       key={`p4-3d-${p.id}`}
                       instancia={p}
-                      modeloDisponivel={modelosDisponiveis.has(CATALOGO[p.tipo].modelo)}
+                      modeloDisponivel={modelosDisponiveis.has(modeloDaPeca(p))}
                       mostrarRotulos={false}
                     />
                   ))}
@@ -3550,10 +3588,9 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               {itemsPostesP4.map(ip => {
                 // Busca os periféricos se for um poste (agrupando duplicados)
                 let listaAgrupados: Array<{ nome: string; quantidade: number }> = []
-                if (ip.id.startsWith('poste-siap')) {
+                if (ip.id.startsWith('poste-')) {
                   const siapNum = ip.id.replace('poste-siap', '')
-                  const chave = `perifericosSiap${siapNum}` as keyof ProjectConfig
-                  const perifericos = config[chave] as PostePeriferico[] | undefined
+                  const perifericos = perifericosPoste(config, ip.id.replace('poste-', ''))
                   if (perifericos && perifericos.length > 0) {
                     listaAgrupados = obterPerifericosAgrupados(perifericos, `siap${siapNum}`)
                   }

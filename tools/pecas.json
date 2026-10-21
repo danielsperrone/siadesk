@@ -1,6 +1,7 @@
 {
   "_comentario": "Configuração de conversão por peça. 'escala' converte a unidade do FBX para metros (0.001 = mm, 0.01 = cm, 0.0254 = polegada, 1 = m). 'origem' define o ponto de ancoragem: 'centro' = centro da base do conjunto inteiro; 'ancora-maior-altura' = centro da base da malha mais alta (gabinete da cancela etc.). Peça ausente usa '_padrao'.",
   "_padrao": { "escala": 0.001, "origem": "centro" },
+  "veiculo": { "modeloRevisado": "Arquivos 3d/pecas-revisadas/veiculo.glb" },
   "cancela": { "escala": 0.001, "origem": "ancora-maior-altura" },
   "cancela-lado-a": { "escala": 0.001, "origem": "ancora-maior-altura" },
   "cancela-lado-b": { "escala": 0.001, "origem": "ancora-maior-altura" }

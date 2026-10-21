@@ -1,6 +1,8 @@
 import { create } from 'zustand'
+import { ajustarPostes } from '../layout/postes'
 import { persist } from 'zustand/middleware'
-import type { ProjectConfig, CalibrationData, PieceTypeId } from '../types'
+import type { ProjectConfig, CalibrationData, PieceTypeId, CenaData } from '../types'
+import { canEditStandards } from '../cloud/session'
 import templateConfig from './template.json'
 
 interface ProjetoRecente {
@@ -14,9 +16,16 @@ interface ProjetoRecente {
 
 interface ProjectState {
   config: ProjectConfig
+  padroesGlobais: Partial<ProjectConfig>
+  cenasGlobais: CenaData[]
+  escopoCena: 'projeto' | 'global'
+  setEscopoCena: (scope: 'projeto' | 'global') => void
   setConfig: <K extends keyof ProjectConfig>(key: K, value: ProjectConfig[K]) => void
-  abaAtiva: 'projeto' | 'postes' | 'calibracao'
-  setAbaAtiva: (aba: 'projeto' | 'postes' | 'calibracao') => void
+  abaAtiva: 'projeto' | 'postes' | 'calibracao' | 'cenas' | 'funcoes_especiais'
+  setAbaAtiva: (aba: 'projeto' | 'postes' | 'calibracao' | 'cenas' | 'funcoes_especiais') => void
+  modoApresentacao: boolean
+  abaAntesApresentacao: ProjectState['abaAtiva']
+  setModoApresentacao: (ativo: boolean) => void
   projetoAtivo: boolean
   setProjetoAtivo: (ativo: boolean) => void
   projetosRecentes: ProjetoRecente[]
@@ -33,9 +42,19 @@ interface ProjectState {
   salvarConfig: () => ProjectConfig
   posteEditandoPerifericos: string | null
   setPosteEditandoPerifericos: (posteId: string | null) => void
+  solicitouSalvarCena: string | null
+  setSolicitouSalvarCena: (nome: string | null) => void
+  cenaParaIr: CenaData | null
+  setCenaParaIr: (cena: CenaData | null) => void
+  adicionarCena: (nome: string, posicao: [number, number, number], target: [number, number, number]) => void
+  excluirCena: (id: string) => void
 }
 
 export const CONFIG_PADRAO: ProjectConfig = {
+  pesoVeiculoKg: 40000,
+  mostrarPeso: true,
+  balancaTcp: { porta: 30005, margemContato: 0.15 },
+  simuladorClp: { portas: { modbus: 502, owl: 30055 }, recolhido: false },
   nomeProjeto: '',
   codigoProposta: '',
   cliente: '',
@@ -134,6 +153,9 @@ export const CONFIG_PADRAO: ProjectConfig = {
   cabinePesagem: false,
   lacosIndutivos: false,
   mostrarVeiculo: false,
+  modeloVeiculo: 'padrao',
+  offsetVeiculoX: 0,
+  veiculoInvertido: false,
   inverterLateralEntrada: false,
   inverterLateralSaida: false,
   revisao: 0,
@@ -161,6 +183,7 @@ export const CONFIG_PADRAO: ProjectConfig = {
   fornecimentoSiamacSiap09: false,
   fornecimentoSiamacPainelAutomacao: true,
   fornecimentoSiamacPainelSom: true,
+  cenas: [],
 }
 
 export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
@@ -174,16 +197,30 @@ export const CALIBRACOES_PADRAO: Record<string, CalibrationData> = {
   'camera-ip': { altura: 2.8, rotacaoY: 180, fixadorX: 0.10, fixadorY: 0.06, fixadorZ: 0.03 },
   'camera-ocr': { altura: 2.5, rotacaoY: 180, fixadorX: -0.15, fixadorY: 0.07, fixadorZ: 0.08 },
   'camera-ip-baixo': { altura: 1.5, rotacaoY: 0, fixadorX: 0.05, fixadorY: 0.14, fixadorZ: 0.07 },
+  'refletor-frontal': { altura: 2.7, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: 0 },
+  'refletor-poste': { altura: 3, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: 0 },
+  'veiculo': { altura: 0.55, rotacaoY: 0, fixadorX: 0.0, fixadorY: 0.0, fixadorZ: 0.0 },
 }
 
 export const useProject = create<ProjectState>()(
   persist(
     (set) => ({
+      padroesGlobais: {},
+      cenasGlobais: [],
+      escopoCena: 'projeto',
+      setEscopoCena: (escopoCena) => set({ escopoCena }),
       config: CONFIG_PADRAO,
       isDirty: false,
       setConfig: (key, value) =>
         set((state) => {
+          if (key === 'padroesPerifericosPostes' && !canEditStandards()) return state
           let novaConfig = { ...state.config, [key]: value }
+          if (/^customSiap0[1-9]$/.test(key) && value === false) {
+            const id = `siap${key.slice(-2)}`
+            novaConfig.alturasPostes = { ...novaConfig.alturasPostes }
+            delete novaConfig.alturasPostes[id]
+          }
+          if (['alturasPostes', 'postesAdicionais', 'larguraBalanca'].includes(key)) novaConfig = ajustarPostes(novaConfig)
 
           // Ajusta rotações dos equipamentos ao inverter lateralmente a Entrada
           if (key === 'inverterLateralEntrada') {
@@ -272,13 +309,25 @@ export const useProject = create<ProjectState>()(
           })
           const isMeta = key === 'revisao' || key === 'dataAlteracao' || key === 'dataCriacao'
           return {
+            ...(key === 'padroesPerifericosPostes' ? { padroesGlobais: { ...state.padroesGlobais, padroesPerifericosPostes: value as ProjectConfig['padroesPerifericosPostes'] } } : {}),
             config: novaConfig,
             projetosRecentes: novosRecentes,
             isDirty: isMeta ? state.isDirty : true
           }
         }),
       abaAtiva: 'projeto',
-      setAbaAtiva: (aba) => set({ abaAtiva: aba }),
+      modoApresentacao: false,
+      abaAntesApresentacao: 'projeto',
+      setModoApresentacao: (ativo) => set(state => {
+        if (ativo === state.modoApresentacao || (ativo && !state.projetoAtivo)) return state
+        return {
+          modoApresentacao: ativo,
+          abaAntesApresentacao: ativo ? state.abaAtiva : state.abaAntesApresentacao,
+          abaAtiva: ativo ? 'postes' : state.abaAntesApresentacao,
+          posteEditandoPerifericos: null,
+        }
+      }),
+      setAbaAtiva: (aba) => { if (aba !== 'calibracao' || canEditStandards()) set({ abaAtiva: aba }) },
       posteEditandoPerifericos: null,
       setPosteEditandoPerifericos: (posteId) => set({ posteEditandoPerifericos: posteId }),
       projetoAtivo: false,
@@ -290,6 +339,8 @@ export const useProject = create<ProjectState>()(
           const baseConfig = usarTemplate ? { ...CONFIG_PADRAO, ...(templateConfig as any) } : CONFIG_PADRAO
           const novaConfig: ProjectConfig = {
             ...baseConfig,
+            ...state.padroesGlobais,
+            cloudId: crypto.randomUUID(),
             nomeProjeto,
             cliente,
             codigoProposta,
@@ -308,6 +359,8 @@ export const useProject = create<ProjectState>()(
           }
           return {
             config: novaConfig,
+            modoApresentacao: false,
+            posteEditandoPerifericos: null,
             projetoAtivo: true,
             abaAtiva: 'projeto',
             isDirty: false,
@@ -320,6 +373,8 @@ export const useProject = create<ProjectState>()(
           const configMesclada: ProjectConfig = {
             ...CONFIG_PADRAO,
             ...config,
+            padroesPerifericosPostes: state.padroesGlobais.padroesPerifericosPostes,
+            cloudId: config.cloudId || crypto.randomUUID(),
             revisao: config.revisao ?? 0,
             dataCriacao: config.dataCriacao || dataCriacao,
             dataAlteracao: config.dataAlteracao || config.dataCriacao || dataCriacao,
@@ -337,13 +392,15 @@ export const useProject = create<ProjectState>()(
           const listaFiltrada = state.projetosRecentes.filter(p => p.id !== id)
           return {
             config: configMesclada,
+            modoApresentacao: false,
+            posteEditandoPerifericos: null,
             projetoAtivo: true,
             abaAtiva: 'projeto',
             isDirty: false,
             projetosRecentes: [projetoExistente, ...listaFiltrada],
           }
         }),
-      fecharProjeto: () => set({ projetoAtivo: false, config: CONFIG_PADRAO, isDirty: false }),
+      fecharProjeto: () => set({ projetoAtivo: false, modoApresentacao: false, posteEditandoPerifericos: null, config: CONFIG_PADRAO, isDirty: false }),
       excluirProjetoRecente: (id) =>
         set((state) => ({
           projetosRecentes: state.projetosRecentes.filter((p) => p.id !== id),
@@ -352,7 +409,7 @@ export const useProject = create<ProjectState>()(
       setEquipamentoCalibrando: (tipo) => set({ equipamentoCalibrando: tipo }),
       calibracoes: CALIBRACOES_PADRAO,
       updateCalibracao: (tipo, key, value) =>
-        set((state) => ({
+        set((state) => canEditStandards() ? ({
           calibracoes: {
             ...state.calibracoes,
             [tipo]: {
@@ -360,8 +417,61 @@ export const useProject = create<ProjectState>()(
               [key]: value,
             },
           },
-        })),
+        }) : state),
       setDirty: (dirty) => set({ isDirty: dirty }),
+      solicitouSalvarCena: null,
+      setSolicitouSalvarCena: (nome) => set({ solicitouSalvarCena: nome }),
+      cenaParaIr: null,
+      setCenaParaIr: (cena) => set({ cenaParaIr: cena }),
+      adicionarCena: (nome, posicao, target) =>
+        set((state) => {
+          const novaCena: CenaData = {
+            id: crypto.randomUUID(),
+            nome,
+            posicao,
+            target,
+          }
+          if (state.escopoCena === 'global') {
+            if (!canEditStandards()) return state
+            return { cenasGlobais: [...state.cenasGlobais, novaCena] }
+          }
+          const novasCenas = [...(state.config.cenas || []), novaCena]
+          const novaConfig = { ...state.config, cenas: novasCenas }
+
+          const novosRecentes = state.projetosRecentes.map((pr) => {
+            if (pr.nomeProjeto === state.config.nomeProjeto && pr.codigoProposta === state.config.codigoProposta) {
+              return { ...pr, config: novaConfig }
+            }
+            return pr
+          })
+
+          return {
+            config: novaConfig,
+            projetosRecentes: novosRecentes,
+            isDirty: true,
+          }
+        }),
+      excluirCena: (id) =>
+        set((state) => {
+          if (state.cenasGlobais.some(c => c.id === id)) {
+            return canEditStandards() ? { cenasGlobais: state.cenasGlobais.filter(c => c.id !== id) } : state
+          }
+          const novasCenas = (state.config.cenas || []).filter((c) => c.id !== id)
+          const novaConfig = { ...state.config, cenas: novasCenas }
+
+          const novosRecentes = state.projetosRecentes.map((pr) => {
+            if (pr.nomeProjeto === state.config.nomeProjeto && pr.codigoProposta === state.config.codigoProposta) {
+              return { ...pr, config: novaConfig }
+            }
+            return pr
+          })
+
+          return {
+            config: novaConfig,
+            projetosRecentes: novosRecentes,
+            isDirty: true,
+          }
+        }),
       salvarConfig: () => {
         let configAtualizada!: ProjectConfig
         set((state) => {
@@ -369,6 +479,7 @@ export const useProject = create<ProjectState>()(
           const dataAlt = new Date().toLocaleDateString('pt-BR')
           configAtualizada = {
             ...state.config,
+            cloudId: state.config.cloudId || crypto.randomUUID(),
             revisao: novaRevisao,
             dataAlteracao: dataAlt
           }
@@ -391,11 +502,13 @@ export const useProject = create<ProjectState>()(
           }
         })
         return configAtualizada
-      }
+      },
     }),
     {
       name: 'siadesk-storage',
       partialize: (state) => ({
+        padroesGlobais: state.padroesGlobais,
+        cenasGlobais: state.cenasGlobais,
         calibracoes: state.calibracoes,
         projetosRecentes: state.projetosRecentes,
         config: state.config,
@@ -412,11 +525,15 @@ export const useProject = create<ProjectState>()(
             dataCriacao: pr.config?.dataCriacao ?? '',
             dataAlteracao: pr.config?.dataAlteracao ?? '',
             equipamentosAdicionais: pr.config?.equipamentosAdicionais ?? [],
+            cenas: pr.config?.cenas ?? [],
+            offsetVeiculoX: pr.config?.offsetVeiculoX ?? 0,
             ...(pr.config ?? {}),
           }
         }))
         return {
           ...atual,
+          padroesGlobais: p?.padroesGlobais ?? {},
+          cenasGlobais: p?.cenasGlobais ?? [],
           calibracoes: {
             ...CALIBRACOES_PADRAO,
             ...(p?.calibracoes ?? {}),
@@ -428,6 +545,8 @@ export const useProject = create<ProjectState>()(
             dataCriacao: p?.config?.dataCriacao ?? '',
             dataAlteracao: p?.config?.dataAlteracao ?? '',
             equipamentosAdicionais: p?.config?.equipamentosAdicionais ?? [],
+            cenas: p?.config?.cenas ?? [],
+            offsetVeiculoX: p?.config?.offsetVeiculoX ?? 0,
             ...(p?.config ?? {}),
           },
           projetoAtivo: p?.projetoAtivo ?? false,

@@ -1,0 +1,344 @@
+{
+  "pesoVeiculoKg": 78600,
+  "mostrarPeso": true,
+  "balancaTcp": {
+    "porta": 30005,
+    "margemContato": 0.15,
+    "recolhido": true
+  },
+  "simuladorClp": {
+    "portas": {
+      "modbus": 502,
+      "owl": 30055
+    },
+    "recolhido": true,
+    "modosSensores": {
+      "A": "auto"
+    }
+  },
+  "nomeProjeto": "Projeto completo configurado",
+  "codigoProposta": "Projeto completo configurado",
+  "cliente": "Projeto completo configurado",
+  "obra": "",
+  "comprimentoBalanca": 15,
+  "larguraBalanca": 3.2,
+  "tipoInstalacaoBalanca": "sobrepor",
+  "siap01": true,
+  "siap02": true,
+  "siap03": true,
+  "siap04": true,
+  "siap05": true,
+  "siap06": true,
+  "siap07": true,
+  "siap08": true,
+  "siap09": true,
+  "distanciaSiap01": 6.5,
+  "distanciaSiap02": 3.5,
+  "distanciaSiap03": 1,
+  "distanciaSiap04": 0,
+  "distanciaSiap05": 6.5,
+  "distanciaSiap06": 3.5,
+  "distanciaSiap07": 1,
+  "distanciaSiap08": 0,
+  "distanciaSiap09": 0,
+  "afastamentoZSiap01": 0.6,
+  "afastamentoZSiap02": 0.6,
+  "afastamentoZSiap03": 0.6,
+  "afastamentoZSiap04": 0.6,
+  "afastamentoZSiap05": 0.6,
+  "afastamentoZSiap06": 0.6,
+  "afastamentoZSiap07": 0.6,
+  "afastamentoZSiap08": 0.6,
+  "afastamentoZSiap09": 0.6,
+  "customSiap01": false,
+  "customSiap02": false,
+  "customSiap03": false,
+  "customSiap04": false,
+  "customSiap05": false,
+  "customSiap06": false,
+  "customSiap07": false,
+  "customSiap08": false,
+  "customSiap09": false,
+  "perifericosSiap01": [
+    {
+      "id": "rfid-siap01",
+      "tipo": "leitor-rfid",
+      "altura": 2.5,
+      "rotacaoY": -110,
+      "fornecimentoSiamac": true,
+      "rotacaoYNormal": -110,
+      "rotacaoYInvertido": 0,
+      "leitor": {
+        "ativo": true,
+        "ip": "127.0.0.1",
+        "porta": 8082,
+        "modo": "tcp",
+        "alcance": 9.5,
+        "abertura": 73,
+        "mostrarCone": false
+      }
+    }
+  ],
+  "perifericosSiap02": [
+    {
+      "id": "camera-siap02",
+      "tipo": "camera-ip",
+      "altura": 1.25,
+      "rotacaoY": -5,
+      "fornecimentoSiamac": true,
+      "rotacaoYNormal": -5,
+      "rotacaoYInvertido": 180,
+      "cameraRtsp": {
+        "ativa": true,
+        "abertura": 70
+      }
+    },
+    {
+      "id": "semaforo-frente-siap02",
+      "tipo": "semaforo",
+      "altura": 2,
+      "rotacaoY": 40,
+      "fornecimentoSiamac": true,
+      "canalSemaforo": "saida-b",
+      "rotacaoYNormal": 40,
+      "rotacaoYInvertido": 0
+    },
+    {
+      "id": "semaforo-tras-siap02",
+      "tipo": "semaforo",
+      "altura": 2,
+      "rotacaoY": 170,
+      "fornecimentoSiamac": true,
+      "canalSemaforo": "saida-a",
+      "rotacaoYNormal": 170,
+      "rotacaoYInvertido": 180
+    },
+    {
+      "id": "display-mensagens-19e72885-9be4-458a-a2ff-da39a3689eea",
+      "tipo": "display-mensagens",
+      "altura": 2.65,
+      "rotacaoYNormal": -90,
+      "rotacaoYInvertido": -90,
+      "rotacaoY": -90,
+      "fornecimentoSiamac": true,
+      "displayTcp": {
+        "ativo": true,
+        "ip": "127.0.0.1",
+        "porta": 2101
+      }
+    }
+  ],
+  "perifericosSiap03": [
+    {
+      "id": "receptor-siap03",
+      "tipo": "sensor-receptor",
+      "altura": 2.5,
+      "rotacaoY": -95,
+      "fornecimentoSiamac": true,
+      "canalSensor": "B",
+      "rotacaoYNormal": -95,
+      "rotacaoYInvertido": -90
+    }
+  ],
+  "perifericosSiap04": [
+    {
+      "id": "emissor-siap04",
+      "tipo": "sensor-emissor",
+      "altura": 0.75,
+      "rotacaoY": 90,
+      "fornecimentoSiamac": true
+    }
+  ],
+  "perifericosSiap05": [
+    {
+      "id": "rfid-siap05",
+      "tipo": "leitor-rfid",
+      "altura": 2.5,
+      "rotacaoY": 0,
+      "fornecimentoSiamac": true,
+      "leitor": {
+        "ativo": true,
+        "ip": "127.0.0.1",
+        "porta": 8080,
+        "modo": "tcp",
+        "alcance": 10.5,
+        "abertura": 45,
+        "mostrarCone": false
+      }
+    }
+  ],
+  "perifericosSiap06": [
+    {
+      "id": "camera-siap06",
+      "tipo": "camera-ip",
+      "altura": 1.1,
+      "rotacaoY": -125,
+      "fornecimentoSiamac": true,
+      "rotacaoYNormal": -125,
+      "rotacaoYInvertido": 180,
+      "cameraRtsp": {
+        "ativa": true,
+        "abertura": 70
+      }
+    },
+    {
+      "id": "semaforo-frente-siap06",
+      "tipo": "semaforo",
+      "altura": 2,
+      "rotacaoY": 40,
+      "fornecimentoSiamac": true,
+      "estadoSemaforo": "verde",
+      "canalSemaforo": "entrada-b",
+      "rotacaoYNormal": 40,
+      "rotacaoYInvertido": 0
+    },
+    {
+      "id": "semaforo-tras-siap06",
+      "tipo": "semaforo",
+      "altura": 2,
+      "rotacaoY": 155,
+      "fornecimentoSiamac": true,
+      "estadoSemaforo": "vermelho",
+      "canalSemaforo": "entrada-a",
+      "rotacaoYNormal": 155,
+      "rotacaoYInvertido": 180
+    },
+    {
+      "id": "display-mensagens-df74e887-7d1c-4a72-9eb9-37e9244cd840",
+      "tipo": "display-mensagens",
+      "altura": 2.65,
+      "rotacaoYNormal": 160,
+      "rotacaoYInvertido": -90,
+      "rotacaoY": 160,
+      "fornecimentoSiamac": true,
+      "displayTcp": {
+        "ativo": true,
+        "ip": "127.0.0.1",
+        "porta": 2102
+      }
+    }
+  ],
+  "perifericosSiap07": [
+    {
+      "id": "receptor-siap07",
+      "tipo": "sensor-receptor",
+      "altura": 2.4,
+      "rotacaoY": -135,
+      "fornecimentoSiamac": true,
+      "canalSensor": "A",
+      "rotacaoYNormal": -135,
+      "rotacaoYInvertido": -90
+    }
+  ],
+  "perifericosSiap08": [
+    {
+      "id": "emissor-siap08",
+      "tipo": "sensor-emissor",
+      "altura": 0.75,
+      "rotacaoY": 65,
+      "fornecimentoSiamac": true,
+      "rotacaoYNormal": 65,
+      "rotacaoYInvertido": 90
+    }
+  ],
+  "perifericosSiap09": [
+    {
+      "id": "camera-siap09-auditoria",
+      "tipo": "camera-ip-baixo",
+      "altura": 5.8,
+      "rotacaoY": 180,
+      "fornecimentoSiamac": true,
+      "cameraRtsp": {
+        "ativa": true,
+        "abertura": 110
+      }
+    },
+    {
+      "id": "camera-ip-baixo-f3b1f39a-9a57-488d-9bc5-e1c22dcc6974",
+      "tipo": "camera-ip-baixo",
+      "altura": 5.8,
+      "rotacaoYNormal": 110,
+      "rotacaoYInvertido": 0,
+      "rotacaoY": 110,
+      "fornecimentoSiamac": true,
+      "cameraRtsp": {
+        "ativa": true,
+        "abertura": 110
+      }
+    }
+  ],
+  "cancelaEntrada": true,
+  "cancelaSaida": true,
+  "distanciaCancelaEntrada": 0.67,
+  "afastamentoZCancelaEntrada": 0.6,
+  "customCancelaEntrada": false,
+  "distanciaCancelaSaida": 0.67,
+  "afastamentoZCancelaSaida": 0.6,
+  "customCancelaSaida": false,
+  "rfidEntrada": false,
+  "rfidSaida": false,
+  "posteCameraEntrada": false,
+  "posteCameraSaida": false,
+  "cameraOcrEntrada": false,
+  "cameraOcrSaida": false,
+  "sensoresBarreira": false,
+  "cameraVeiculoGrande": false,
+  "displayMensagens": false,
+  "caixaSom": false,
+  "painelAutomacao": false,
+  "painelSom": false,
+  "cabinePesagem": false,
+  "lacosIndutivos": false,
+  "mostrarVeiculo": true,
+  "offsetVeiculoX": 22.44,
+  "inverterLateralEntrada": false,
+  "inverterLateralSaida": false,
+  "revisao": 7,
+  "dataCriacao": "18/09/2026",
+  "dataAlteracao": "20/09/2026",
+  "distanciaPainelAutomacao": 15,
+  "distanciaQuadroDistribuicao": 10,
+  "distanciaRoteadorPoE": 20,
+  "distanciaPainelQuadro": 5,
+  "distanciaPainelRoteador": 5,
+  "rotacoes3D": {},
+  "rotacoes3DNormal": {},
+  "rotacoes3DInvertido": {},
+  "equipamentosAdicionais": [],
+  "fornecimentoSiamacCancelaEntrada": true,
+  "fornecimentoSiamacCancelaSaida": true,
+  "fornecimentoSiamacSiap01": false,
+  "fornecimentoSiamacSiap02": false,
+  "fornecimentoSiamacSiap03": false,
+  "fornecimentoSiamacSiap04": false,
+  "fornecimentoSiamacSiap05": false,
+  "fornecimentoSiamacSiap06": false,
+  "fornecimentoSiamacSiap07": false,
+  "fornecimentoSiamacSiap08": false,
+  "fornecimentoSiamacSiap09": false,
+  "fornecimentoSiamacPainelAutomacao": true,
+  "fornecimentoSiamacPainelSom": true,
+  "cenas": [],
+  "cloudId": "cbbf9bb9-9966-44cd-b454-d0a4daa153f0",
+  "canaisCancelas": {
+    "cancela-saida": "A",
+    "cancela-entrada": "B"
+  },
+  "identidadesVeiculo": {
+    "cavalo": {
+      "placa": "ABC1D23",
+      "tags": [
+        "000000000000000000000001"
+      ]
+    },
+    "reboque": {
+      "placa": "XYZ4E56",
+      "tags": []
+    }
+  },
+  "simuladorCameras": {
+    "fps": 2,
+    "largura": 640,
+    "porta": 8554
+  }
+}

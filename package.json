@@ -1,20 +1,31 @@
 {
   "name": "dimensionador",
-  "version": "0.1.0",
+  "version": "0.2.10",
   "description": "Configurador de projetos de automação de balança rodoviária",
   "private": true,
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run build:etiquetas && tsc -b && vite build",
     "preview": "vite preview",
-    "app": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "modelos": "node tools/convert-models.mjs"
+    "app": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron . --dev\"",
+    "modelos": "node tools/convert-models.mjs",
+    "modelos:container": "node tools/build-container-truck.mjs",
+    "package": "npm run build && electron-builder --win dir",
+    "installer": "npm run build && electron-builder --win nsis --x64 --config.electronDist=node_modules/electron/dist",
+    "build:etiquetas": "node tools/build-etiquetas.mjs",
+    "predev": "npm run build:etiquetas",
+    "preapp": "npm run build:etiquetas",
+    "test:etiquetas": "playwright test --config playwright.etiquetas.config.mjs",
+    "test:cloud": "playwright test --config playwright.cloud.config.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/manrope": "5.2.8",
+    "@mmote/niimbluelib": "0.0.1-alpha.45",
     "@react-three/drei": "^10.0.0",
     "@react-three/fiber": "^9.0.0",
     "exceljs": "^4.4.0",
+    "qrcode": "1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.175.0",
@@ -24,6 +35,7 @@
   "devDependencies": {
     "@gltf-transform/core": "^4.4.0",
     "@gltf-transform/functions": "^4.4.0",
+    "@playwright/test": "1.63.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.175.0",
@@ -31,8 +43,44 @@
     "assimpjs": "^0.0.10",
     "concurrently": "^9.0.0",
     "electron": "^33.0.0",
+    "electron-builder": "^26.15.3",
+    "jsqr": "1.4.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
     "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.siamac.siadesk",
+    "productName": "SIADESK",
+    "directories": {
+      "output": "dist-packaged"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "mediamtx/**/*"
+    ],
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "mediamtx/**/*",
+      "package.json"
+    ],
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SIADESK",
+      "installerLanguages": ["pt_BR"],
+      "language": "1046",
+      "artifactName": "SIADESK-Setup-${version}-${arch}.${ext}"
+    },
+    "win": {
+      "icon": "public/brand/siadesk.ico",
+      "target": [
+        "dir"
+      ]
+    }
   }
 }

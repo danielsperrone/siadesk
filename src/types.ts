@@ -9,6 +9,8 @@ export type PieceTypeId =
   | 'semaforo'
   | 'camera-ip'
   | 'camera-ip-baixo'
+  | 'refletor-frontal'
+  | 'refletor-poste'
   | 'camera-ocr'
   | 'leitor-rfid'
   | 'sensor-emissor'
@@ -16,6 +18,7 @@ export type PieceTypeId =
   | 'poste-3m'
   | 'poste-6m'
   | 'poste-1-5m'
+  | 'poste-trave'
   | 'display-mensagens'
   | 'painel-automacao'
   | 'painel-som'
@@ -24,7 +27,18 @@ export type PieceTypeId =
   | 'veiculo'
   | 'laco-indutivo'
 
+export type EstadoSemaforo = 'desligado' | 'verde' | 'vermelho'
+
 export interface PostePeriferico {
+  montagem?: 'coluna-negativa' | 'coluna-positiva' | 'barra-superior'
+  /** Posição na barra superior, em metros a partir do centro da balança. */
+  deslocamentoBarra?: number
+  velocidadeDisplay?: number
+  cameraRtsp?: import('./simulator/cameras').ConfigCamera
+  displayTcp?: import('./simulator/display').ConfigDisplay
+  leitor?: import('./simulator/leitura').ConfigLeitor
+  canalSemaforo?: import('./simulator/types').CanalSemaforo | 'figurante'
+  canalSensor?: import('./simulator/types').CanalSensor
   id: string
   tipo: PieceTypeId
   altura: number
@@ -32,6 +46,14 @@ export interface PostePeriferico {
   rotacaoYNormal?: number
   rotacaoYInvertido?: number
   fornecimentoSiamac?: boolean
+  estadoSemaforo?: EstadoSemaforo
+  mensagemDisplay?: string
+}
+
+export interface PadraoPerifericoPoste {
+  altura: number
+  rotacaoYNormal: number
+  rotacaoYInvertido: number
 }
 
 export interface PieceType {
@@ -47,6 +69,18 @@ export interface PieceType {
 }
 
 export interface PieceInstance {
+  posteId?: string
+  estruturaPoste?: { altura: number; largura?: number }
+  /** Modelo alternativo com a mesma origem e escala da peça de catálogo. */
+  modelo?: string
+  velocidadeDisplay?: number
+  cameraRtsp?: import('./simulator/cameras').ConfigCamera
+  displayTcp?: import('./simulator/display').ConfigDisplay
+  leitor?: import('./simulator/leitura').ConfigLeitor
+  canalSemaforo?: import('./simulator/types').CanalSemaforo | 'figurante'
+  canalSensor?: import('./simulator/types').CanalSensor
+  estadoSemaforo?: EstadoSemaforo
+  mensagemDisplay?: string
   id: string
   tipo: PieceTypeId
   /** Rótulo exibido na cena e na documentação, ex.: "Cancela de entrada" */
@@ -65,7 +99,27 @@ export interface PieceInstance {
   offset?: [number, number, number]
 }
 
+export interface PreferenciasEtiquetas {
+  version: 1
+  equipamentos: { id: string; nome: string; ip: string; username: string; password: string; excluded: string[] }[]
+}
+
 export interface ProjectConfig {
+  postesAdicionais?: PosteAdicional[]
+  alturasPostes?: Record<string, number>
+  simuladorCameras?: import('./simulator/cameras').ConfigCameras
+  identidadesVeiculo?: Record<import('./simulator/leitura').ParteVeiculo, import('./simulator/leitura').IdentidadeVeiculo>
+  pesoVeiculoKg?: number
+  mostrarPeso?: boolean
+  balancaTcp?: { porta: number; margemContato: number; recolhido?: boolean }
+  simuladorClp?: import('./simulator/types').ConfiguracaoCLP
+  canaisCancelas?: Record<string, import('./simulator/types').CanalCancela>
+  cloudId?: string
+  etiquetas?: PreferenciasEtiquetas
+  /** Estado de abertura de cada cancela na visualização 3D. */
+  cancelasAbertas?: Record<string, boolean>
+  /** Posições para novas unidades, por poste e tipo; independem dos itens instalados. */
+  padroesPerifericosPostes?: Record<string, Partial<Record<PieceTypeId, PadraoPerifericoPoste>>>
   nomeProjeto: string
   codigoProposta: string
   cliente: string
@@ -158,6 +212,11 @@ export interface ProjectConfig {
   lacosIndutivos: boolean
   /** Caminhão ilustrativo sobre a balança */
   mostrarVeiculo: boolean
+  /** Projetos antigos usam o caminhão padrão. */
+  modeloVeiculo?: 'padrao' | 'container'
+  /** Posição X (deslocamento) do caminhão na pista */
+  offsetVeiculoX: number
+  veiculoInvertido?: boolean
   inverterLateralEntrada: boolean
   inverterLateralSaida: boolean
   // Campos de controle de versão e auditoria
@@ -189,6 +248,28 @@ export interface ProjectConfig {
   fornecimentoSiamacSiap09?: boolean
   fornecimentoSiamacPainelAutomacao?: boolean
   fornecimentoSiamacPainelSom?: boolean
+  cenas?: CenaData[]
+}
+
+export interface PosteAdicional {
+  id: string
+  nome: string
+  tipo: 'simples' | 'trave'
+  referencia: 'A' | 'B' | 'meio'
+  distanciaX: number
+  lateral: 'negativa' | 'positiva'
+  afastamentoZ: number
+  afastamentoZPositivo: number
+  altura: number
+  fornecimentoSiamac: boolean
+  perifericos: PostePeriferico[]
+}
+
+export interface CenaData {
+  id: string
+  nome: string
+  posicao: [number, number, number]
+  target: [number, number, number]
 }
 
 export interface EquipamentoAdicional {
@@ -206,3 +287,14 @@ export interface CalibrationData {
   fixadorZ: number // Posição Z da bolinha rosa
 }
 
+declare global {
+  interface Window {
+    dimensionador?: {
+      onSalvarEtiquetas: (callback: (request: {requestId:string;key:string;data:PreferenciasEtiquetas}) => void) => () => void
+      responderEtiquetas: (requestId:string,result:{ok:boolean;error?:string}) => void
+      salvarArquivoEtiquetas: (config:ProjectConfig) => Promise<{ok:boolean;error?:string}>
+      abrirEtiquetas: (project: import('./labels/project-labels').ProjetoEtiquetas) => Promise<{ ok: boolean; error?: string }>
+      exportPdf: () => Promise<any>
+    }
+  }
+}

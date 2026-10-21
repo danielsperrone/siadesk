@@ -42,3 +42,16 @@ ehthumbs.db
 .claude/
 .gemini/
 antigravity_remote/
+
+# Etiquetas: saídas reproduzíveis e testes locais
+public/etiquetas/
+test-results/
+playwright-report/
+
+# SIADESK: releases e estado local de publicação
+releases/
+tools/siadesk-stage.txt
+tools/siadesk-release.txt
+
+# Renderizador local de vídeo (FFmpeg baixado para esta máquina)
+.motion-tools/

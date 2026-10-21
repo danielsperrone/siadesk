@@ -1,0 +1,15 @@
+[
+  "routes/api.php",
+  "database/migrations/2026_09_14_000001_create_siadesk_tables.php",
+  "app/Models/SiadeskProject.php",
+  "app/Models/SiadeskSetting.php",
+  "app/Services/SiadeskAccess.php",
+  "app/Http/Middleware/AuthenticateSiadesk.php",
+  "app/Http/Controllers/Api/SiadeskController.php",
+  "app/Filament/Resources/SiadeskProjectResource.php",
+  "app/Filament/Resources/SiadeskProjectResource/Pages/ListSiadeskProjects.php",
+  "app/Filament/Pages/SiadeskSettings.php",
+  "resources/views/filament/pages/siadesk-settings.blade.php",
+  "tests/Feature/SiadeskIntegrationTest.php",
+  "app/Http/Middleware/SiadeskJsonErrors.php"
+]

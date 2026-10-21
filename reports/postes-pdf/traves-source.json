@@ -1,0 +1,14 @@
+{
+  "version": "0.2.10",
+  "packaged": false,
+  "profile": "C:\\Users\\danie\\AppData\\Local\\Temp\\siadesk-trave-pdf-hL4nFy",
+  "executable": "D:\\Projetos\\siadesk\\node_modules\\electron\\dist\\electron.exe",
+  "output": "D:\\Projetos\\siadesk\\reports\\postes-pdf\\traves-source.pdf",
+  "bytes": 4345844,
+  "isolatedProfile": true,
+  "traveNames": [
+    "Trave entrada",
+    "Trave meio"
+  ],
+  "errors": []
+}

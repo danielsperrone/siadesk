@@ -1,0 +1,23 @@
+.identidade-partes { display: flex; gap: 8px; margin-bottom: 2px; }
+.identidade-partes button { flex: 1; min-height: 42px; }
+.identidade-partes button[aria-pressed=true] { background: #185eac; color: white; border-color: #185eac; }
+.identidade-placa { font-size: 26px !important; font-weight: 750; text-align: center; letter-spacing: .09em; color: #152943 !important; background: #fff !important; border-top: 6px solid #185eac !important; }
+.tags-secao { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.tags-secao .clp-description { margin: 0 0 4px; line-height: 1.5; }
+.tags-titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.tags-titulo h4 { margin: 0; font-size: 16px; }.tags-titulo span { font-size: 12px; }
+.tags-adicionar, .leitor-rede { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+.tags-adicionar button, .tags-adicionar input { height: 40px; margin: 0; }
+.tags-adicionar .controle-sinalizacao { min-width: 0; }
+.leitor-rede { grid-template-columns: 2fr 1fr; }.leitor-rede input { min-width: 0; width: 100%; }
+.tag-preview { display: block; min-height: 18px; font-size: 12px; color: #b5c5d5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.tags-adicionar button:disabled, .leitor-config button:disabled { opacity: .45; cursor: not-allowed; }
+.tags-lista { list-style: none; padding: 0; margin: 0; max-height: 240px; overflow: auto; }
+.tags-lista li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid #78889a40; }
+.tags-lista code, .tags-lista strong { display: block; }.tags-lista code { font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }.tags-lista button { min-height: 36px; }
+.tags-vazio { margin: 0; padding: 12px 0; font-size: 13px; line-height: 1.6; }.identidade-peso { margin-top: 4px; }
+.leitor-status { margin-top: 18px; line-height: 1.6; font-size: 13px; }.leitor-status small { display: block; overflow-wrap: anywhere; }
+.leitor-config { display: flex; flex-direction: column; gap: 14px; }
+.leitor-config .clp-description { margin: 0 0 6px; }
+.leitor-config button:focus-visible, .identidade-partes button:focus-visible, .tags-lista button:focus-visible { outline: 2px solid #5297e0; outline-offset: 3px; }
+@media (max-width: 420px) { .tags-adicionar { grid-template-columns: 1fr; gap: 10px; } .tags-lista code { font-size: 10px; } }

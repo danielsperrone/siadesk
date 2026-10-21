@@ -1,7 +1,15 @@
+import { useSession } from '../cloud/session'
+import { AlturaPostePadrao, PostesAdicionais } from './PostesAdicionais'
+import { perifericosPoste, posicaoPosteAdicional, TIPOS_BARRA_SUPERIOR } from '../layout/postes'
 import { useState } from 'react'
 import { useProject, CALIBRACOES_PADRAO } from '../store/project'
-import { CATALOGO } from '../catalog/pieces'
-import type { CalibrationData, PieceTypeId, PostePeriferico, ProjectConfig } from '../types'
+import { CATALOGO, MODELOS_VEICULO } from '../catalog/pieces'
+import { alturaMaximaPoste, criarPeriferico, obterPadraoPeriferico } from '../store/padroes-perifericos'
+import { PainelSimulador } from '../simulator/PainelSimulador'
+import { ConfiguracaoPeriferico } from './ConfiguracaoPeriferico'
+import { PainelCameras } from '../simulator/InterfaceCameras'
+import { PainelBalanca } from '../simulator/InterfaceBalanca'
+import type { CalibrationData, PadraoPerifericoPoste, PieceTypeId, PostePeriferico, ProjectConfig } from '../types'
 
 const EQUIPAMENTOS_CALIBRACAO: Array<{ id: PieceTypeId; label: string }> = [
   { id: 'cancela', label: 'Cancela' },
@@ -14,6 +22,9 @@ const EQUIPAMENTOS_CALIBRACAO: Array<{ id: PieceTypeId; label: string }> = [
   { id: 'camera-ip', label: 'Câmera IP POE' },
   { id: 'camera-ocr', label: 'Câmera OCR' },
   { id: 'camera-ip-baixo', label: 'Câmera IP de Auditoria de Carga (Superior)' },
+  { id: 'refletor-frontal', label: 'Refletor frontal' },
+  { id: 'refletor-poste', label: 'Refletor tipo poste (para baixo)' },
+  { id: 'veiculo', label: 'Caminhão (Ilustrativo)' },
 ]
 
 const OPCOES_EQUIPAMENTOS_ADICIONAIS = [
@@ -29,6 +40,10 @@ const OPCOES_EQUIPAMENTOS_ADICIONAIS = [
 ]
 
 export function ConfigPanel() {
+  const canCalibrate = useSession(s => !!s.user?.admin)
+  const cenasGlobais = useProject(s => s.cenasGlobais)
+  const escopoCena = useProject(s => s.escopoCena)
+  const setEscopoCena = useProject(s => s.setEscopoCena)
   const config = useProject((s) => s.config)
   const setConfig = useProject((s) => s.setConfig)
   
@@ -36,6 +51,7 @@ export function ConfigPanel() {
   const posteEditandoPerifericos = useProject((s) => s.posteEditandoPerifericos)
   const setPosteEditandoPerifericos = useProject((s) => s.setPosteEditandoPerifericos)
   const [perifericoSelecionadoParaAdicionar, setPerifericoSelecionadoParaAdicionar] = useState<string>('camera-ip')
+  const [montagemTrave, setMontagemTrave] = useState<NonNullable<PostePeriferico['montagem']>>('coluna-negativa')
   const [modalAdicionaisAberto, setModalAdicionaisAberto] = useState(false)
   const [menuMaisOpcoesAberto, setMenuMaisOpcoesAberto] = useState(false)
   const [modalCopiarPerifericosAberto, setModalCopiarPerifericosAberto] = useState(false)
@@ -54,6 +70,18 @@ export function ConfigPanel() {
   
   const calibracoes = useProject((s) => s.calibracoes)
   const updateCalibracao = useProject((s) => s.updateCalibracao)
+
+  const setSolicitouSalvarCena = useProject((s) => s.setSolicitouSalvarCena)
+  const setCenaParaIr = useProject((s) => s.setCenaParaIr)
+  const excluirCena = useProject((s) => s.excluirCena)
+
+  const [nomeNovaCena, setNomeNovaCena] = useState('')
+
+  const handleSalvarCena = () => {
+    if (!nomeNovaCena.trim()) return
+    setSolicitouSalvarCena(nomeNovaCena.trim())
+    setNomeNovaCena('')
+  }
 
   const calib = calibracoes[equipamentoCalibrando] || { altura: 0, rotacaoY: 0, fixadorX: 0, fixadorY: 0, fixadorZ: 0 }
 
@@ -306,7 +334,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.05}
@@ -380,6 +408,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap01 && config.customSiap01 && posteEditandoDistancia === 'siap01' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap01" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -393,7 +422,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -467,6 +496,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap02 && config.customSiap02 && posteEditandoDistancia === 'siap02' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap02" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -480,7 +510,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -554,6 +584,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap03 && config.customSiap03 && posteEditandoDistancia === 'siap03' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap03" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -567,7 +598,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -641,6 +672,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap04 && config.customSiap04 && posteEditandoDistancia === 'siap04' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap04" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -654,7 +686,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -744,7 +776,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.05}
@@ -818,6 +850,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap05 && config.customSiap05 && posteEditandoDistancia === 'siap05' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap05" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -831,7 +864,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -905,6 +938,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap06 && config.customSiap06 && posteEditandoDistancia === 'siap06' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap06" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -918,7 +952,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -992,6 +1026,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap07 && config.customSiap07 && posteEditandoDistancia === 'siap07' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap07" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -1005,7 +1040,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -1079,6 +1114,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap08 && config.customSiap08 && posteEditandoDistancia === 'siap08' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap08" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -1092,7 +1128,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -1170,6 +1206,7 @@ export function ConfigPanel() {
                   </label>
                   {config.siap09 && config.customSiap09 && posteEditandoDistancia === 'siap09' && (
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AlturaPostePadrao id="siap09" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
                         <input
@@ -1183,7 +1220,7 @@ export function ConfigPanel() {
                         />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
-                        Espaçamento Vertical - Z (m)
+                        Afastamento lateral - Z (m)
                         <input
                           type="number"
                           step={0.1}
@@ -1200,6 +1237,8 @@ export function ConfigPanel() {
               </div>
             </section>
 
+            <PostesAdicionais />
+
             <section>
               <h2>Opções de Visualização</h2>
               <label className="checkbox">
@@ -1210,6 +1249,17 @@ export function ConfigPanel() {
                 />
                 Mostrar caminhão ilustrativo
               </label>
+              <label htmlFor="modelo-veiculo">Modelo do caminhão</label>
+              <select
+                id="modelo-veiculo"
+                className="modelo-veiculo-select"
+                value={config.modeloVeiculo ?? 'padrao'}
+                onChange={(e) => setConfig('modeloVeiculo', e.target.value as 'padrao' | 'container')}
+              >
+                {Object.entries(MODELOS_VEICULO).map(([id, modelo]) => (
+                  <option key={id} value={id}>{modelo.nome}</option>
+                ))}
+              </select>
             </section>
 
             <section style={{ marginTop: '20px' }}>
@@ -1241,7 +1291,7 @@ export function ConfigPanel() {
         )}
 
         {abaAtiva === 'calibracao' && (
-          <div className="calibracao-container">
+          <fieldset disabled={!canCalibrate} className="calibracao-container" style={{border: 0, minWidth: 0}}>
             <section>
               <h2>Calibrar Sensores nos Postes</h2>
               <p className="instrucao">
@@ -1264,85 +1314,109 @@ export function ConfigPanel() {
             <section className="controles-calibracao">
               <h3>Ajustes de {CATALOGO[equipamentoCalibrando]?.nome}</h3>
               
-              <h4>1. Marcar o fixador (peça da esquerda)</h4>
-              <p className="ajuda-calibracao">
-                Mova a bolinha rosa até o centro do fixador do periférico:
-              </p>
-              
-              <div className="controle-grupo">
-                <label>
-                  <span>Fixador Lateral (X): <strong>{calib.fixadorX.toFixed(2)} m</strong></span>
-                  <input
-                    type="range"
-                    min="-0.8"
-                    max="0.8"
-                    step="0.01"
-                    value={calib.fixadorX}
-                    onChange={(e) => handleUpdate('fixadorX', Number(e.target.value))}
-                  />
-                </label>
-              </div>
+              {equipamentoCalibrando === 'veiculo' ? (
+                <>
+                  <p className="ajuda-calibracao">
+                    Ajuste a altura vertical do caminhão em relação à plataforma da balança:
+                  </p>
+                  
+                  <div className="controle-grupo">
+                    <label>
+                      <span>Altura em relação à Balança (Y): <strong>{calib.altura.toFixed(2)} m</strong></span>
+                      <input
+                        type="range"
+                        min="0.0"
+                        max="2.0"
+                        step="0.01"
+                        value={calib.altura}
+                        onChange={(e) => handleUpdate('altura', Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h4>1. Marcar o fixador (peça da esquerda)</h4>
+                  <p className="ajuda-calibracao">
+                    Mova a bolinha rosa até o centro do fixador do periférico:
+                  </p>
+                  
+                  <div className="controle-grupo">
+                    <label>
+                      <span>Fixador Lateral (X): <strong>{calib.fixadorX.toFixed(2)} m</strong></span>
+                      <input
+                        type="range"
+                        min="-0.8"
+                        max="0.8"
+                        step="0.01"
+                        value={calib.fixadorX}
+                        onChange={(e) => handleUpdate('fixadorX', Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
 
-              <div className="controle-grupo">
-                <label>
-                  <span>Fixador Altura (Y): <strong>{calib.fixadorY.toFixed(2)} m</strong></span>
-                  <input
-                    type="range"
-                    min="-0.8"
-                    max="0.8"
-                    step="0.01"
-                    value={calib.fixadorY}
-                    onChange={(e) => handleUpdate('fixadorY', Number(e.target.value))}
-                  />
-                </label>
-              </div>
+                  <div className="controle-grupo">
+                    <label>
+                      <span>Fixador Altura (Y): <strong>{calib.fixadorY.toFixed(2)} m</strong></span>
+                      <input
+                        type="range"
+                        min="-0.8"
+                        max="0.8"
+                        step="0.01"
+                        value={calib.fixadorY}
+                        onChange={(e) => handleUpdate('fixadorY', Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
 
-              <div className="controle-grupo">
-                <label>
-                  <span>Fixador Profundidade (Z): <strong>{calib.fixadorZ.toFixed(2)} m</strong></span>
-                  <input
-                    type="range"
-                    min="-0.8"
-                    max="0.8"
-                    step="0.01"
-                    value={calib.fixadorZ}
-                    onChange={(e) => handleUpdate('fixadorZ', Number(e.target.value))}
-                  />
-                </label>
-              </div>
+                  <div className="controle-grupo">
+                    <label>
+                      <span>Fixador Profundidade (Z): <strong>{calib.fixadorZ.toFixed(2)} m</strong></span>
+                      <input
+                        type="range"
+                        min="-0.8"
+                        max="0.8"
+                        step="0.01"
+                        value={calib.fixadorZ}
+                        onChange={(e) => handleUpdate('fixadorZ', Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
 
-              <h4>2. Altura e Rotação no poste (preview da direita)</h4>
-              <p className="ajuda-calibracao">
-                Ajuste a altura de fixação no poste e a direção em que o periférico aponta:
-              </p>
+                  <h4>2. Altura e Rotação no poste (preview da direita)</h4>
+                  <p className="ajuda-calibracao">
+                    Ajuste a altura de fixação no poste e a direção em que o periférico aponta:
+                  </p>
 
-              <div className="controle-grupo">
-                <label>
-                  <span>Altura no Poste (Y): <strong>{calib.altura.toFixed(2)} m</strong></span>
-                  <input
-                    type="range"
-                    min="0.0"
-                    max="3.5"
-                    step="0.05"
-                    value={calib.altura}
-                    onChange={(e) => handleUpdate('altura', Number(e.target.value))}
-                  />
-                </label>
-              </div>
+                  <div className="controle-grupo">
+                    <label>
+                      <span>Altura no Poste (Y): <strong>{calib.altura.toFixed(2)} m</strong></span>
+                      <input
+                        type="range"
+                        min="0.0"
+                        max="3.5"
+                        step="0.05"
+                        value={calib.altura}
+                        onChange={(e) => handleUpdate('altura', Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
 
-              <div className="controle-grupo">
-                <label>
-                  <span>Giro no Poste (Rotação Y): <strong>{calib.rotacaoY}°</strong></span>
-                  <input
-                    type="range"
-                    min="-180"
-                    max="180"
-                    step="5"
-                    value={calib.rotacaoY}
-                    onChange={(e) => handleUpdate('rotacaoY', Number(e.target.value))}
-                  />
-                </label>
-              </div>
+                  <div className="controle-grupo">
+                    <label>
+                      <span>Giro no Poste (Rotação Y): <strong>{calib.rotacaoY}°</strong></span>
+                      <input
+                        type="range"
+                        min="-180"
+                        max="180"
+                        step="5"
+                        value={calib.rotacaoY}
+                        onChange={(e) => handleUpdate('rotacaoY', Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
+                </>
+              )}
 
               <button
                 className="btn-reset"
@@ -1360,6 +1434,113 @@ export function ConfigPanel() {
                 Resetar para o Padrão
               </button>
             </section>
+          </fieldset>
+        )}
+
+        {abaAtiva === 'cenas' && (
+          <div className="cenas-container animate-fade-in">
+            <section>
+              <h2>Gerenciar Cenas</h2>
+              <label>Salvar cena em
+                <select value={escopoCena} onChange={e => setEscopoCena(e.target.value as 'projeto' | 'global')}>
+                  <option value="projeto">Somente neste projeto</option>
+                  <option value="global" disabled={!canCalibrate}>Global — todos os projetos da empresa</option>
+                </select>
+              </label>
+              {escopoCena === 'global' && <p>A cena será sincronizada com todos os projetos da empresa.</p>}
+              <p className="instrucao" style={{ marginBottom: '14px', fontSize: '12.5px', color: '#8fa3b3', lineHeight: '1.4' }}>
+                Posicione a câmera na visualização 3D como desejar e clique no botão abaixo para salvar a cena atual (ângulo, zoom e posição).
+              </p>
+              
+              <div style={{ marginTop: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', color: '#c4d0da', marginBottom: '8px' }}>
+                  Nome da nova cena
+                  <input
+                    type="text"
+                    placeholder="Ex: Entrada, Vista Geral"
+                    value={nomeNovaCena}
+                    onChange={(e) => setNomeNovaCena(e.target.value)}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      marginTop: '6px',
+                      padding: '7px 9px',
+                      border: '1px solid #3b4a58',
+                      borderRadius: '6px',
+                      background: '#141b22',
+                      color: '#e8edf2',
+                      fontSize: '13px'
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn-salvar-cena"
+                  onClick={handleSalvarCena}
+                  disabled={!nomeNovaCena.trim() || (escopoCena === 'global' && !canCalibrate)}
+                  style={{ marginTop: '8px' }}
+                >
+                  📸 Salvar Cena
+                </button>
+              </div>
+            </section>
+
+            <section>
+              <h2>Cenas Salvas</h2>
+              {([...cenasGlobais, ...(config.cenas || [])]).length === 0 ? (
+                <div style={{
+                  padding: '20px 16px',
+                  background: '#141b22',
+                  border: '1px dashed #3b4a58',
+                  borderRadius: '6px',
+                  textAlign: 'center',
+                  color: '#8fa3b3',
+                  fontSize: '12.5px',
+                  lineHeight: '1.4'
+                }}>
+                  Nenhuma cena salva ainda.<br/>Ajuste a câmera e salve uma cena acima.
+                </div>
+              ) : (
+                <div className="cenas-lista">
+                  {[...cenasGlobais, ...(config.cenas || [])].map((cena) => (
+                    <div
+                      key={cena.id}
+                      className="cena-item"
+                      onClick={() => setCenaParaIr(cena)}
+                    >
+                      <div className="cena-info">
+                        🎬 {cena.nome} {cenasGlobais.some(c => c.id === cena.id) ? '· Global' : '· Projeto'}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-excluir-cena"
+                        disabled={cenasGlobais.some(c => c.id === cena.id) && !canCalibrate}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (window.confirm(`Deseja realmente excluir a cena "${cena.nome}"?`)) {
+                            excluirCena(cena.id)
+                          }
+                        }}
+                        title="Excluir cena"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
+        {abaAtiva === 'funcoes_especiais' && (
+          <div className="funcoes-especiais-container animate-fade-in">
+            <section>
+              <h2>Funções Especiais</h2>
+              <PainelSimulador />
+              <PainelBalanca />
+              <PainelCameras />
+            </section>
           </div>
         )}
       </div>
@@ -1367,35 +1548,35 @@ export function ConfigPanel() {
       {/* Modal de Periféricos do Poste */}
       {posteEditandoPerifericos && (() => {
         const key = `perifericos${posteEditandoPerifericos.charAt(0).toUpperCase()}${posteEditandoPerifericos.slice(1)}` as keyof ProjectConfig
-        const lista = (config[key] || []) as PostePeriferico[]
+        const posteAdicional = config.postesAdicionais?.find(p => p.id === posteEditandoPerifericos)
+        const trave = posteAdicional?.tipo === 'trave'
+        const lista = perifericosPoste(config, posteEditandoPerifericos)
+        const salvarLista = (perifericos: PostePeriferico[]) => posteAdicional
+          ? setConfig('postesAdicionais', (config.postesAdicionais ?? []).map(p => p.id === posteAdicional.id ? { ...p, perifericos } : p))
+          : setConfig(key, perifericos)
 
-        const getAlturaMaximaPoste = (posteId: string) => {
-          if (posteId === 'siap04' || posteId === 'siap08') return 1.5
-          if (posteId === 'siap09') return 6.0
-          return 3.0
-        }
-
-        const getAlturaPadrao = (tipo: string) => {
-          return CALIBRACOES_PADRAO[tipo]?.altura ?? 1.5
-        }
-
-        const getRotacaoPadrao = (tipo: string) => {
-          return CALIBRACOES_PADRAO[tipo]?.rotacaoY ?? 0
+        const getAlturaMaximaPoste = (id: string) => alturaMaximaPoste(id, config)
+        const tipoSelecionado = (trave && montagemTrave === 'barra-superior' && !TIPOS_BARRA_SUPERIOR.includes(perifericoSelecionadoParaAdicionar)
+          ? 'camera-ip-baixo' : perifericoSelecionadoParaAdicionar) as PieceTypeId
+        const padrao = obterPadraoPeriferico(config, posteEditandoPerifericos, tipoSelecionado, calibracoes)
+        const salvarPadrao = (tipo: PieceTypeId, valores: PadraoPerifericoPoste) => {
+          setConfig('padroesPerifericosPostes', {
+            ...config.padroesPerifericosPostes,
+            [posteEditandoPerifericos]: {
+              ...config.padroesPerifericosPostes?.[posteEditandoPerifericos],
+              [tipo]: valores,
+            },
+          })
         }
 
         const handleAdicionar = () => {
-          const rotPadrao = getRotacaoPadrao(perifericoSelecionadoParaAdicionar)
-          const novo: PostePeriferico = {
-            id: `${perifericoSelecionadoParaAdicionar}-${Date.now()}`,
-            tipo: perifericoSelecionadoParaAdicionar as PieceTypeId,
-            altura: getAlturaPadrao(perifericoSelecionadoParaAdicionar),
-            rotacaoY: rotPadrao,
-            rotacaoYNormal: rotPadrao,
-            rotacaoYInvertido: rotPadrao,
-            fornecimentoSiamac: true,
+          const novo = criarPeriferico(config, posteEditandoPerifericos, tipoSelecionado, calibracoes)
+          if (trave) {
+            novo.montagem = montagemTrave
+            novo.deslocamentoBarra = 0
           }
           const novaLista = [...lista, novo]
-          setConfig(key, novaLista)
+          salvarLista(novaLista)
         }
 
         const handleUpdatePeriferico = <T extends keyof PostePeriferico>(id: string, campo: T, valor: PostePeriferico[T]) => {
@@ -1430,12 +1611,12 @@ export function ConfigPanel() {
             }
             return p
           })
-          setConfig(key, novaLista)
+          salvarLista(novaLista)
         }
 
         const handleExcluirPeriferico = (id: string) => {
           const novaLista = lista.filter((p) => p.id !== id)
-          setConfig(key, novaLista)
+          salvarLista(novaLista)
         }
 
         return (
@@ -1473,7 +1654,7 @@ export function ConfigPanel() {
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#fff' }}>
-                  Periféricos do Poste {posteEditandoPerifericos.toUpperCase()}
+                  {posteAdicional ? `Equipamentos — ${posteAdicional.nome}` : `Periféricos do Poste ${posteEditandoPerifericos.toUpperCase()}`}
                 </h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
                   {/* Botão de 3 pontinhos */}
@@ -1515,11 +1696,11 @@ export function ConfigPanel() {
                       flexDirection: 'column',
                       overflow: 'hidden',
                     }}>
-                      <button
+                      {!posteAdicional && <button
                         type="button"
                         onClick={() => {
                           setMenuMaisOpcoesAberto(false)
-                          setModalCopiarPerifericosAberto(true)
+                          if (!posteAdicional) setModalCopiarPerifericosAberto(true)
                         }}
                         style={{
                           background: 'transparent',
@@ -1536,13 +1717,13 @@ export function ConfigPanel() {
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         Copiar de outro poste
-                      </button>
+                      </button>}
                       <button
                         type="button"
                         onClick={() => {
                           setMenuMaisOpcoesAberto(false)
                           if (window.confirm(`Deseja realmente excluir todos os periféricos do poste ${posteEditandoPerifericos.toUpperCase()}?`)) {
-                            setConfig(key, [])
+                            salvarLista([])
                           }
                         }}
                         style={{
@@ -1595,10 +1776,18 @@ export function ConfigPanel() {
                 gap: '12px',
                 alignItems: 'stretch',
               }}>
+                {trave && <label className="trave-montagem">Fixar equipamento em
+                  <select aria-label="Fixar equipamento em" value={montagemTrave} onChange={e => {
+                    setMontagemTrave(e.target.value as NonNullable<PostePeriferico['montagem']>)
+                    if (e.target.value === 'barra-superior') setPerifericoSelecionadoParaAdicionar('camera-ip-baixo')
+                  }}>
+                    <option value="coluna-negativa">Coluna lateral Z−</option><option value="coluna-positiva">Coluna lateral Z+</option><option value="barra-superior">Barra superior</option>
+                  </select>
+                </label>}
                 <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
                   Adicionar Equipamento
                   <select
-                    value={perifericoSelecionadoParaAdicionar}
+                    value={tipoSelecionado}
                     onChange={(e) => setPerifericoSelecionadoParaAdicionar(e.target.value)}
                     style={{
                       padding: '8px 12px',
@@ -1614,14 +1803,41 @@ export function ConfigPanel() {
                     <option value="camera-ip">Câmera IP POE</option>
                     <option value="camera-ocr">Câmera OCR de Placas</option>
                     <option value="camera-ip-baixo">Câmera IP de Auditoria de Carga (Superior)</option>
-                    <option value="leitor-rfid">Leitor Antena RFID</option>
-                    <option value="semaforo">Semáforo</option>
-                    <option value="sensor-emissor">Sensor Barreira (Emissor)</option>
-                    <option value="sensor-receptor">Sensor Barreira (Receptor)</option>
-                    <option value="display-mensagens">Display de Mensagens</option>
-                    <option value="caixa-de-som">Caixa de Som</option>
+                    <option value="refletor-frontal">Refletor frontal</option>
+                    <option value="refletor-poste">Refletor tipo poste (para baixo)</option>
+                    <option disabled={trave && montagemTrave === 'barra-superior'} value="leitor-rfid">Leitor Antena RFID</option>
+                    <option disabled={trave && montagemTrave === 'barra-superior'} value="semaforo">Semáforo</option>
+                    <option disabled={trave && montagemTrave === 'barra-superior'} value="sensor-emissor">Sensor Barreira (Emissor)</option>
+                    <option disabled={trave && montagemTrave === 'barra-superior'} value="sensor-receptor">Sensor Barreira (Receptor)</option>
+                    <option disabled={trave && montagemTrave === 'barra-superior'} value="display-mensagens">Display de Mensagens</option>
+                    <option disabled={trave && montagemTrave === 'barra-superior'} value="caixa-de-som">Caixa de Som</option>
                   </select>
                 </label>
+                <details className="padroes-poste">
+                  <summary>Padrões deste equipamento no poste</summary><fieldset disabled={!canCalibrate} style={{border: 0, minWidth: 0}}>
+                  <p>Valem para novas unidades neste poste. Os equipamentos instalados mantêm seus ajustes.</p>
+                  <label>
+                    Altura padrão: {padrao.altura.toFixed(2)} m
+                    <input type="range" aria-label="Altura padrão" min="0" max={getAlturaMaximaPoste(posteEditandoPerifericos)} step="0.05"
+                      value={padrao.altura} onChange={(e) => salvarPadrao(tipoSelecionado, { ...padrao, altura: Number(e.target.value) })} />
+                  </label>
+                  <label>
+                    Giro padrão (normal): {padrao.rotacaoYNormal}°
+                    <input type="range" aria-label="Giro padrão normal" min="-180" max="180" step="5"
+                      value={padrao.rotacaoYNormal} onChange={(e) => salvarPadrao(tipoSelecionado, { ...padrao, rotacaoYNormal: Number(e.target.value) })} />
+                  </label>
+                  {posteEditandoPerifericos !== 'siap09' && <label>
+                    Giro padrão (lateral invertida): {padrao.rotacaoYInvertido}°
+                    <input type="range" aria-label="Giro padrão lateral invertida" min="-180" max="180" step="5"
+                      value={padrao.rotacaoYInvertido} onChange={(e) => salvarPadrao(tipoSelecionado, { ...padrao, rotacaoYInvertido: Number(e.target.value) })} />
+                  </label>}
+                  <button type="button" className="padrao-poste-acao" disabled={!config.padroesPerifericosPostes?.[posteEditandoPerifericos]?.[tipoSelecionado]}
+                    onClick={() => {
+                      const padroes = { ...config.padroesPerifericosPostes?.[posteEditandoPerifericos] }
+                      delete padroes[tipoSelecionado]
+                      setConfig('padroesPerifericosPostes', { ...config.padroesPerifericosPostes, [posteEditandoPerifericos]: padroes })
+                    }}>Restaurar padrão geral</button>
+                </fieldset></details>
                 <button
                   type="button"
                   onClick={handleAdicionar}
@@ -1679,6 +1895,7 @@ export function ConfigPanel() {
                           {CATALOGO[perif.tipo]?.nome || 'Equipamento'}
                         </span>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <ConfiguracaoPeriferico perif={perif} alterar={handleUpdatePeriferico} />
                           <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a4b4c0', fontSize: '11px', cursor: 'pointer', margin: 0 }}>
                             <input
                               type="checkbox"
@@ -1707,8 +1924,19 @@ export function ConfigPanel() {
                         </div>
                       </div>
 
-                      {/* Altura Slider */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {trave && <label className="trave-montagem">Ponto de montagem
+                        <select aria-label="Ponto de montagem" value={perif.montagem ?? 'coluna-negativa'} onChange={e => handleUpdatePeriferico(perif.id, 'montagem', e.target.value as PostePeriferico['montagem'])}>
+                          <option value="coluna-negativa">Coluna lateral Z−</option><option value="coluna-positiva">Coluna lateral Z+</option>
+                          {TIPOS_BARRA_SUPERIOR.includes(perif.tipo) && <option value="barra-superior">Barra superior</option>}
+                        </select>
+                      </label>}
+                      {trave && perif.montagem === 'barra-superior' && posteAdicional ? <label className="trave-montagem">
+                        Posição na barra — Z (m)
+                        <input aria-label="Posição na barra" type="number" step={0.1}
+                          min={posicaoPosteAdicional(config, posteAdicional).zNegativo} max={posicaoPosteAdicional(config, posteAdicional).zPositivo}
+                          value={perif.deslocamentoBarra ?? 0} onChange={e => handleUpdatePeriferico(perif.id, 'deslocamentoBarra', Number(e.target.value))} />
+                        <span className="poste-ajuda">0 = centro da balança. Altura acompanha a trave ({posteAdicional.altura.toFixed(2)} m). {perif.tipo === 'camera-ip-baixo' ? 'Câmera voltada para baixo; o giro orienta a imagem.' : 'Ajuste o giro para orientar o equipamento.'}</span>
+                      </label> : <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' }}>
                           <span>Altura de Fixação</span>
                           <strong style={{ color: '#fff' }}>{perif.altura.toFixed(2)} m</strong>
@@ -1722,7 +1950,7 @@ export function ConfigPanel() {
                           onChange={(e) => handleUpdatePeriferico(perif.id, 'altura', Number(e.target.value))}
                           style={{ width: '100%', cursor: 'pointer' }}
                         />
-                      </div>
+                      </div>}
 
                       {/* Rotação Slider */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1740,6 +1968,17 @@ export function ConfigPanel() {
                           style={{ width: '100%', cursor: 'pointer' }}
                         />
                       </div>
+                      <button type="button" className="padrao-poste-acao" disabled={!canCalibrate}
+                        onClick={() => {
+                          salvarPadrao(perif.tipo, {
+                            altura: Math.min(perif.altura, getAlturaMaximaPoste(posteEditandoPerifericos)),
+                            rotacaoYNormal: perif.rotacaoYNormal ?? perif.rotacaoY,
+                            rotacaoYInvertido: perif.rotacaoYInvertido ?? perif.rotacaoY,
+                          })
+                          setPerifericoSelecionadoParaAdicionar(perif.tipo)
+                        }}>
+                        Usar como padrão neste poste
+                      </button>
                     </div>
                   ))
                 )}
