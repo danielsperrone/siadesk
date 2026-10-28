@@ -1,3 +1,4 @@
+import { NumberField } from './NumberField'
 import { useState } from 'react'
 import { useProject } from '../store/project'
 import { ALTURA_MAX_POSTE, ALTURA_MIN_POSTE, alturaPoste, limitar } from '../layout/postes'
@@ -49,7 +50,7 @@ export function PostesAdicionais() {
           </select>
         </label>
         <label>Deslocamento longitudinal — X (m)
-          <input type="number" step={0.1} value={poste.distanciaX} onChange={e => alterar(poste.id, { distanciaX: Number(e.target.value) })} />
+          <NumberField step={0.1} value={poste.distanciaX} onChange={e => alterar(poste.id, { distanciaX: Number(e.target.value) })} />
         </label>
         <p className="poste-ajuda">{poste.referencia === 'meio' ? 'A partir do centro: positivo em direção ao lado B e negativo ao lado A.' : 'A partir da cabeceira: positivo para fora e negativo sobre a plataforma.'}</p>
         <label>Altura do poste (m)<input type="number" min={ALTURA_MIN_POSTE} max={ALTURA_MAX_POSTE} step={0.1} value={poste.altura}

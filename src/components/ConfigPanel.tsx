@@ -1,3 +1,4 @@
+import { NumberField } from './NumberField'
 import { useSession } from '../cloud/session'
 import { AlturaPostePadrao, PostesAdicionais } from './PostesAdicionais'
 import { perifericosPoste, posicaoPosteAdicional, TIPOS_BARRA_SUPERIOR } from '../layout/postes'
@@ -323,8 +324,7 @@ export function ConfigPanel() {
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.05}
                           min={0}
                           max={10}
@@ -335,8 +335,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.05}
                           min={0}
                           max={10}
@@ -411,10 +410,8 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap01" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
-                          min={0}
                           max={20}
                           value={config.distanciaSiap01}
                           onChange={(e) => setConfig('distanciaSiap01', Number(e.target.value))}
@@ -423,8 +420,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -499,10 +495,8 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap02" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
-                          min={0}
                           max={20}
                           value={config.distanciaSiap02}
                           onChange={(e) => setConfig('distanciaSiap02', Number(e.target.value))}
@@ -511,8 +505,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -587,10 +580,8 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap03" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
-                          min={0}
                           max={20}
                           value={config.distanciaSiap03}
                           onChange={(e) => setConfig('distanciaSiap03', Number(e.target.value))}
@@ -599,8 +590,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -675,8 +665,7 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap04" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={-10}
                           max={20}
@@ -687,8 +676,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -765,8 +753,7 @@ export function ConfigPanel() {
                     <div style={{ marginLeft: '24px', marginTop: '6px', padding: '10px', background: '#141b22', border: '1px solid #283440', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.05}
                           min={0}
                           max={10}
@@ -777,8 +764,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.05}
                           min={0}
                           max={10}
@@ -853,10 +839,8 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap05" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
-                          min={0}
                           max={20}
                           value={config.distanciaSiap05}
                           onChange={(e) => setConfig('distanciaSiap05', Number(e.target.value))}
@@ -865,8 +849,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -941,10 +924,8 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap06" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
-                          min={0}
                           max={20}
                           value={config.distanciaSiap06}
                           onChange={(e) => setConfig('distanciaSiap06', Number(e.target.value))}
@@ -953,8 +934,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -1029,10 +1009,8 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap07" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
-                          min={0}
                           max={20}
                           value={config.distanciaSiap07}
                           onChange={(e) => setConfig('distanciaSiap07', Number(e.target.value))}
@@ -1041,8 +1019,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -1117,8 +1094,7 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap08" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={-10}
                           max={20}
@@ -1129,8 +1105,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -1209,8 +1184,7 @@ export function ConfigPanel() {
                       <AlturaPostePadrao id="siap09" />
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Espaçamento Horizontal - X (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={-10}
                           max={10}
@@ -1221,8 +1195,7 @@ export function ConfigPanel() {
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#a4b4c0', margin: 0 }}>
                         Afastamento lateral - Z (m)
-                        <input
-                          type="number"
+                        <NumberField
                           step={0.1}
                           min={0}
                           max={10}
@@ -1932,7 +1905,7 @@ export function ConfigPanel() {
                       </label>}
                       {trave && perif.montagem === 'barra-superior' && posteAdicional ? <label className="trave-montagem">
                         Posição na barra — Z (m)
-                        <input aria-label="Posição na barra" type="number" step={0.1}
+                        <NumberField aria-label="Posição na barra" step={0.1}
                           min={posicaoPosteAdicional(config, posteAdicional).zNegativo} max={posicaoPosteAdicional(config, posteAdicional).zPositivo}
                           value={perif.deslocamentoBarra ?? 0} onChange={e => handleUpdatePeriferico(perif.id, 'deslocamentoBarra', Number(e.target.value))} />
                         <span className="poste-ajuda">0 = centro da balança. Altura acompanha a trave ({posteAdicional.altura.toFixed(2)} m). {perif.tipo === 'camera-ip-baixo' ? 'Câmera voltada para baixo; o giro orienta a imagem.' : 'Ajuste o giro para orientar o equipamento.'}</span>
