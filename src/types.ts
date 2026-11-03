@@ -105,6 +105,8 @@ export interface PreferenciasEtiquetas {
 }
 
 export interface ProjectConfig {
+  /** Imagens incorporadas ao projeto; a primeira é a foto principal (máximo de quatro). */
+  fotosProjeto?: FotoProjeto[]
   postesAdicionais?: PosteAdicional[]
   alturasPostes?: Record<string, number>
   simuladorCameras?: import('./simulator/cameras').ConfigCameras
@@ -249,6 +251,12 @@ export interface ProjectConfig {
   fornecimentoSiamacPainelAutomacao?: boolean
   fornecimentoSiamacPainelSom?: boolean
   cenas?: CenaData[]
+}
+
+export interface FotoProjeto {
+  id: string
+  nome: string
+  dataUrl: string
 }
 
 export interface PosteAdicional {

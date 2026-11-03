@@ -203,7 +203,7 @@ export function captureStandards() {
   message('Posições e equipamentos atuais definidos como padrão. Sincronizando com a empresa…')
 }
 function extractStandards(config: ProjectConfig) {
-  const { nomeProjeto, cliente, codigoProposta, obra, dataCriacao, dataAlteracao, revisao, cenas, cloudId, etiquetas, cancelasAbertas, ...standards } = config
+  const { nomeProjeto, cliente, codigoProposta, obra, dataCriacao, dataAlteracao, revisao, cenas, cloudId, etiquetas, cancelasAbertas, fotosProjeto, ...standards } = config
   return standards
 }
 export function resolveConflictsAsCopies() {

@@ -1,4 +1,5 @@
 import { NumberField } from './NumberField'
+import { FotosProjeto } from './FotosProjeto'
 import { useSession } from '../cloud/session'
 import { AlturaPostePadrao, PostesAdicionais } from './PostesAdicionais'
 import { perifericosPoste, posicaoPosteAdicional, TIPOS_BARRA_SUPERIOR } from '../layout/postes'
@@ -134,6 +135,8 @@ export function ConfigPanel() {
                 />
               </label>
             </section>
+
+            <FotosProjeto />
 
             <section>
               <h2>Balança</h2>

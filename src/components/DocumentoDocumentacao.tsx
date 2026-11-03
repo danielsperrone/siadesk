@@ -1,3 +1,4 @@
+import './fotos-projeto.css'
 import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
@@ -407,6 +408,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 }) => {
   const tipoDoc = tipoDocumento ?? (apenasChecklistProp ? 'instalacao' : 'tecnico')
   const apenasChecklist = tipoDoc !== 'tecnico'
+  const fotosProjeto = (config.fotosProjeto ?? []).slice(0, 4)
+  const paginasFotos = !apenasChecklist && fotosProjeto.length > 0 ? 1 : 0
   const calibracoes = useProject((s) => s.calibracoes)
   const setConfig = useProject((s) => s.setConfig)
   const modelosDisponiveis = useModelosDisponiveis()
@@ -2095,11 +2098,11 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     config.tipoInstalacaoBalanca === 'sobrepor' || config.tipoInstalacaoBalanca === 'semiembutida'
 
   // Número da página de nivelamento (após a última página de fiação por ponto)
-  const numPaginaNivelamento = 6 + itensDetalhe.length + paginasT5.length + paginasT6.length + 1
+  const numPaginaNivelamento = 6 + paginasFotos + itensDetalhe.length + paginasT5.length + paginasT6.length + 1
   const numPaginaNivelamentoSelo = (CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + itensDetalhe.length + paginasT5.length + paginasT6.length + 1
 
   // Número da página da Matriz de Responsabilidades (após a de nivelamento, se houver, ou fiação por ponto)
-  const numPaginaMatriz = 6 + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0) + 1
+  const numPaginaMatriz = 6 + paginasFotos + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0) + 1
   const numPaginaMatrizSelo = (CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0) + 1
 
   // Calcula a quantidade total de páginas físicas do documento (inclui sempre a capa física no total de lances do visualizador)
@@ -2108,8 +2111,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       const extra = tipoDoc === 'picklist' ? paginasChecklistInternoA4.length : 0
       return paginasChecklist.length + extra
     }
-    return 6 + 1 + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0)
-  }, [itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, paginasChecklistInternoA4, apenasChecklist, tipoDoc])
+    return 6 + 1 + paginasFotos + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0)
+  }, [paginasFotos, itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, paginasChecklistInternoA4, apenasChecklist, tipoDoc])
 
   // Calcula a quantidade total de páginas do documento (para o carimbo/selo, que pode ou não contar a capa)
   const totalPaginas = useMemo(() => {
@@ -2118,8 +2121,8 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       return paginasChecklist.length + extra
     }
     const paginasFixas = (CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + 1
-    return paginasFixas + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0)
-  }, [itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, paginasChecklistInternoA4, apenasChecklist, tipoDoc])
+    return paginasFixas + paginasFotos + itensDetalhe.length + paginasT5.length + paginasT6.length + (exigeNivelamentoBalanca ? 1 : 0)
+  }, [paginasFotos, itensDetalhe, paginasT5, paginasT6, exigeNivelamentoBalanca, paginasChecklist, paginasChecklistInternoA4, apenasChecklist, tipoDoc])
 
   return (
     <div className="documento-impressao" style={{ '--zoom-relatorio': isPrinting || capturingPhase !== 'idle' ? 1 : zoomPreview / 100 } as React.CSSProperties}>
@@ -2297,8 +2300,32 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
         </div>
       )}
 
+      {paginasFotos > 0 && (isPrinting || paginaAtiva === 2) && (
+        <div className="pagina-a3 pagina-tecnica pagina-fotos-projeto">
+          <div className="cabecalho-tecnico">
+            <div className="logo-siamac-doc">SIAMAC <span>OWL</span></div>
+            <div className="documento-meta-topo">PROPOSTA: {config.codigoProposta || '-'} | DOCUMENTO: {codigoDocumento}</div>
+          </div>
+          <div className="decoracao-linha-cabecalho">
+            <div className="linha-vinho" /><div className="linha-verde" /><div className="linha-azul" />
+          </div>
+          <h2 className="titulo-planta-pagina">REGISTRO FOTOGRÁFICO DO PROJETO</h2>
+          <div className="fotos-relatorio-galeria" data-quantidade={fotosProjeto.length}>
+            {fotosProjeto.map((foto, index) => <figure key={foto.id}>
+              <div className="fotos-relatorio-imagem"><img src={foto.dataUrl} alt={index === 0 ? 'Foto principal do projeto' : `Foto adicional ${index}`} /></div>
+              <figcaption>{index === 0 ? 'Foto principal' : `Foto adicional ${index}`}</figcaption>
+            </figure>)}
+          </div>
+          <div className="rodape-tecnico">
+            <div className="notas-rodape"><strong>{config.nomeProjeto}</strong><br />{config.cliente}{config.obra ? ` · ${config.obra}` : ''}</div>
+            <SeloPagina config={config} tituloPlanta="REGISTRO FOTOGRÁFICO" revisao={config.revisao}
+              paginaNum={CAPA_ENTRA_NA_CONTAGEM ? 2 : 1} totalPaginas={totalPaginas} />
+          </div>
+        </div>
+      )}
+
       {/* PÁGINA 2: VISÃO GERAL DA BALANÇA (PLANTA DE CIMA) */}
-      {(isPrinting || paginaAtiva === 2 || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p2')) && (
+      {(isPrinting || paginaAtiva === (2 + paginasFotos) || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p2')) && (
         <div 
           className="pagina-a3 pagina-tecnica"
           style={capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p2' ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
@@ -2451,7 +2478,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta="REFERÊNCIA DOS POSTES"
               revisao={config.revisao}
-              paginaNum={CAPA_ENTRA_NA_CONTAGEM ? 2 : 1}
+              paginaNum={(CAPA_ENTRA_NA_CONTAGEM ? 2 : 1) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>
@@ -2459,7 +2486,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       )}
 
       {/* PÁGINA 3: AFASTAMENTO DOS EQUIPAMENTOS (COTAS DE AFASTAMENTO EM RELAÇÃO À BALANÇA) */}
-      {(isPrinting || paginaAtiva === 3 || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p3')) && (
+      {(isPrinting || paginaAtiva === (3 + paginasFotos) || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p3')) && (
         <div 
           className="pagina-a3 pagina-tecnica"
           style={capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p3' ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
@@ -2775,7 +2802,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta="AFASTAMENTO DOS EQUIPAMENTOS"
               revisao={config.revisao}
-              paginaNum={CAPA_ENTRA_NA_CONTAGEM ? 3 : 2}
+              paginaNum={(CAPA_ENTRA_NA_CONTAGEM ? 3 : 2) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>
@@ -2783,7 +2810,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       )}
 
       {/* PÁGINA 4: DETALHAMENTO DO POSTE E QUANTITATIVOS */}
-      {(isPrinting || paginaAtiva === 4) && (
+      {(isPrinting || paginaAtiva === (4 + paginasFotos)) && (
         <div className="pagina-a3 pagina-tecnica">
           {/* Cabeçalho Divisor */}
           <div className="cabecalho-tecnico">
@@ -2975,7 +3002,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta="DETALHE DE FIXAÇÃO DOS POSTES"
               revisao={config.revisao}
-              paginaNum={CAPA_ENTRA_NA_CONTAGEM ? 4 : 3}
+              paginaNum={(CAPA_ENTRA_NA_CONTAGEM ? 4 : 3) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>
@@ -2985,7 +3012,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
       {/* PÁGINAS DE DETALHE INDIVIDUAL DE CADA POSTE E CANCELA ATIVOS */}
       {itensDetalhe.map((item, idx) => {
-        const numPag = 5 + idx
+        const numPag = 5 + paginasFotos + idx
         const isCurrentCapture = capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === `detail-${item.id}`
         
         if (!isPrinting && paginaAtiva !== numPag && !isCurrentCapture) return null
@@ -3469,7 +3496,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta={item.nomeNoSelo}
               revisao={config.revisao}
-              paginaNum={item.paginaNum || (CAPA_ENTRA_NA_CONTAGEM ? 5 : 4)}
+              paginaNum={(item.paginaNum || (CAPA_ENTRA_NA_CONTAGEM ? 5 : 4)) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>
@@ -3478,7 +3505,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
     })}
 
       {/* PÁGINA 4 (RENUMERADA): EQUIPAMENTOS DOS POSTES (VISÃO GERAL) */}
-      {(isPrinting || paginaAtiva === (5 + itensDetalhe.length) || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p4')) && (
+      {(isPrinting || paginaAtiva === (5 + paginasFotos + itensDetalhe.length) || (capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p4')) && (
         <div 
           className="pagina-a3 pagina-tecnica"
           style={capturingPhase === 'capturing' && pagesToCapture[currentCaptureIndex] === 'p4' ? { position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -100 } : undefined}
@@ -3681,7 +3708,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta="EQUIPAMENTOS DOS POSTES"
               revisao={config.revisao}
-              paginaNum={(CAPA_ENTRA_NA_CONTAGEM ? 5 : 4) + itensDetalhe.length}
+              paginaNum={((CAPA_ENTRA_NA_CONTAGEM ? 5 : 4) + itensDetalhe.length) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>
@@ -3690,7 +3717,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
       {/* PÁGINAS DA TABELA GERAL DE FIAÇÃO (PÁGINA 6 EM DIANTE) */}
       {paginasT5.map((itensDaPagina, p5Idx) => {
-        const numPaginaFisica = 6 + itensDetalhe.length + p5Idx;
+        const numPaginaFisica = 6 + paginasFotos + itensDetalhe.length + p5Idx;
         const numPaginaSelo = (CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + itensDetalhe.length + p5Idx;
         if (!isPrinting && paginaAtiva !== numPaginaFisica) return null;
 
@@ -3770,7 +3797,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 config={config}
                 tituloPlanta={`ESPECIFICAÇÃO DE FIAÇÃO E CABEAMENTO ${paginasT5.length > 1 ? `FL.${p5Idx + 1}` : ''}`}
                 revisao={config.revisao}
-                paginaNum={numPaginaSelo}
+                paginaNum={(numPaginaSelo) + paginasFotos}
                 totalPaginas={totalPaginas}
               />
             </div>
@@ -3779,7 +3806,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
       })}
 
       {/* PÁGINA DE CONSOLIDAÇÃO: RESUMO DE CABOS E PREMISSAS */}
-      {(isPrinting || paginaAtiva === (6 + itensDetalhe.length + paginasT5.length)) && (
+      {(isPrinting || paginaAtiva === (6 + paginasFotos + itensDetalhe.length + paginasT5.length)) && (
         <div className="pagina-a3 pagina-tecnica">
           {/* Cabeçalho Divisor */}
           <div className="cabecalho-tecnico">
@@ -3911,7 +3938,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta="RESUMO DE CABEAMENTO"
               revisao={config.revisao}
-              paginaNum={(CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + itensDetalhe.length + paginasT5.length}
+              paginaNum={((CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + itensDetalhe.length + paginasT5.length) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>
@@ -3920,7 +3947,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
 
       {/* PÁGINAS DO DETALHAMENTO DE FIAÇÃO POR POSTE (PÁGINA 6 EM DIANTE) */}
       {paginasT6.map((cardsDaPagina, p6Idx) => {
-        const numPaginaFisica = 6 + itensDetalhe.length + paginasT5.length + 1 + p6Idx;
+        const numPaginaFisica = 6 + paginasFotos + itensDetalhe.length + paginasT5.length + 1 + p6Idx;
         const numPaginaSelo = (CAPA_ENTRA_NA_CONTAGEM ? 6 : 5) + itensDetalhe.length + paginasT5.length + 1 + p6Idx;
         if (!isPrinting && paginaAtiva !== numPaginaFisica) return null;
 
@@ -4023,7 +4050,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
                 config={config}
                 tituloPlanta={`FIAÇÃO POR POSTE ${paginasT6.length > 1 ? `FL.${p6Idx + 1}` : ''}`}
                 revisao={config.revisao}
-                paginaNum={numPaginaSelo}
+                paginaNum={(numPaginaSelo) + paginasFotos}
                 totalPaginas={totalPaginas}
               />
             </div>
@@ -4116,7 +4143,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta="NIVELAMENTO NA PISTA"
               revisao={config.revisao}
-              paginaNum={numPaginaNivelamentoSelo}
+              paginaNum={(numPaginaNivelamentoSelo) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>
@@ -4261,7 +4288,7 @@ export const DocumentoDocumentacao: React.FC<DocumentoDocumentacaoProps> = ({
               config={config}
               tituloPlanta="MATRIZ DE RESPONSABILIDADES"
               revisao={config.revisao}
-              paginaNum={numPaginaMatrizSelo}
+              paginaNum={(numPaginaMatrizSelo) + paginasFotos}
               totalPaginas={totalPaginas}
             />
           </div>

@@ -345,6 +345,7 @@ export const useProject = create<ProjectState>()(
             cliente,
             codigoProposta,
             obra: '',
+            fotosProjeto: [],
             revisao: 0,
             dataCriacao,
             dataAlteracao: dataCriacao,

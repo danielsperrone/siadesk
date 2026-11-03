@@ -1,6 +1,6 @@
 {
   "name": "dimensionador",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "Configurador de projetos de automação de balança rodoviária",
   "private": true,
   "main": "electron/main.cjs",
