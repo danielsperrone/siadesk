@@ -1,6 +1,6 @@
 {
   "name": "dimensionador",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Configurador de projetos de automação de balança rodoviária",
   "private": true,
   "main": "electron/main.cjs",
@@ -68,7 +68,9 @@
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
+      "allowToChangeInstallationDirectory": false,
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "SIADESK",
